@@ -2,7 +2,7 @@ package com.fishbreedingmanager.event;
 
 import com.fishbreedingmanager.FishBreedingManager;
 import com.fishbreedingmanager.attachment.ModAttachments;
-import com.fishbreedingmanager.breeding.BreedingController;
+import com.fishbreedingmanager.breeding.ActiveLoveIndex;
 import com.fishbreedingmanager.breeding.BreedingRule;
 import com.fishbreedingmanager.breeding.BreedingRuleManager;
 import com.fishbreedingmanager.breeding.BreedingState;
@@ -24,7 +24,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  * 喂食是非侵入的, 用 {@link PlayerInteractEvent.EntityInteract} 事件而非修改任何实体类 
  *
  * <p>规则从当前运行时快照动态查询 需求§34, 实体自身的 {@link BreedingState} 持有临时 love 计时器 
- * 进入 love 后注册到 {@link BreedingController}, 使控制器无需每 tick 扫全图即可找配偶 需求§37 
+ * 进入 Love 后注册到 {@link ActiveLoveIndex}，使控制器无需每 tick 扫描全世界实体即可寻找配偶。
  */
 @EventBusSubscriber(modid = FishBreedingManager.MOD_ID)
 public final class EntityInteractionHandler {
@@ -67,7 +67,7 @@ public final class EntityInteractionHandler {
 
         // 进入 love 
         state.enterLove(now, LOVE_DURATION_TICKS);
-        BreedingController.addLove((ServerLevel) target.level(), target.getUUID());
+        ActiveLoveIndex.INSTANCE.add((ServerLevel) target.level(), target.getUUID());
 
         // 消耗一个物品, 创造模式玩家豁免 
         if (!player.getAbilities().instabuild) {

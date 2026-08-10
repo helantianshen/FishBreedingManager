@@ -1,12 +1,7 @@
 package com.fishbreedingmanager.breeding;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.WeakHashMap;
 
 import com.fishbreedingmanager.FishBreedingManager;
 import com.fishbreedingmanager.attachment.ModAttachments;
@@ -52,25 +47,7 @@ public final class BreedingController {
     /** 靠近配偶时的寻路速度倍率 */
     private static final double NAV_SPEED = 1.0D;
 
-    /** 每 level 的 love registry, WeakHashMap 使已卸载 level 的数据可回收 */
-    private static final Map<ServerLevel, Set<UUID>> LOVE_REGISTRIES =
-            Collections.synchronizedMap(new WeakHashMap<>());
-
     private BreedingController() {
-    }
-
-    /** 注册刚进入 FBM love 的实体到给定 level */
-    public static void addLove(ServerLevel level, UUID entityId) {
-        LOVE_REGISTRIES.computeIfAbsent(level, l -> Collections.synchronizedSet(Collections.newSetFromMap(new java.util.HashMap<>())))
-                .add(entityId);
-    }
-
-    /** 从 level 的 love registry 移除实体, 繁殖或 love 过期后调用 */
-    private static void removeLove(ServerLevel level, UUID entityId) {
-        Set<UUID> set = LOVE_REGISTRIES.get(level);
-        if (set != null) {
-            set.remove(entityId);
-        }
     }
 
     @SubscribeEvent
@@ -81,8 +58,8 @@ public final class BreedingController {
         if (level.getGameTime() % SEARCH_INTERVAL != 0L) {
             return;
         }
-        Set<UUID> registry = LOVE_REGISTRIES.get(level);
-        if (registry == null || registry.isEmpty()) {
+        List<UUID> ids = ActiveLoveIndex.INSTANCE.snapshot(level);
+        if (ids.isEmpty()) {
             return;
         }
 
@@ -90,16 +67,10 @@ public final class BreedingController {
         BreedingRuleManager manager = BreedingRuleManager.get(server);
         long now = level.getGameTime();
 
-        // 快照 id 列表, 以便迭代时可修改活跃集合 
-        List<UUID> ids;
-        synchronized (registry) {
-            ids = new ArrayList<>(registry);
-        }
-
         for (UUID id : ids) {
             Entity entity = level.getEntity(id);
             if (entity == null || entity.isRemoved()) {
-                registry.remove(id);
+                ActiveLoveIndex.INSTANCE.remove(level, id);
                 continue;
             }
 
@@ -110,26 +81,26 @@ public final class BreedingController {
             // 规则被删/禁用 → 立即清除该实体 FBM love 需求§28 
             if (rule == null || !rule.enabled()) {
                 state.clearLove();
-                registry.remove(id);
+                ActiveLoveIndex.INSTANCE.remove(level, id);
                 continue;
             }
             // love 计时器过期 
             if (!state.isInLove(now)) {
-                registry.remove(id);
+                ActiveLoveIndex.INSTANCE.remove(level, id);
                 continue;
             }
 
             if (state.getMate() != null) {
-                handlePaired(level, entity, state, rule, now, registry);
+                handlePaired(level, entity, state, rule, now);
             } else {
-                findAndPair(level, entity, state, manager, now, registry);
+                findAndPair(level, entity, state, now);
             }
         }
     }
 
     /** 已配对, 向配偶移动, 足够近则繁殖 */
     private static void handlePaired(ServerLevel level, Entity entity, BreedingState state,
-                                     BreedingRule rule, long now, Set<UUID> registry) {
+                                     BreedingRule rule, long now) {
         Entity mate = level.getEntity(state.getMate());
         if (mate == null || mate.isRemoved()) {
             state.setMate(null);
@@ -137,18 +108,15 @@ public final class BreedingController {
         }
         navigateToward(entity, mate);
         if (entity.distanceToSqr(mate) <= BREED_DISTANCE_SQR) {
-            breed(level, entity, mate, rule, now, registry);
+            breed(level, entity, mate, rule, now);
         }
     }
 
     /** 未配对, 寻找附近同类型 in-love 伙伴并互相认定 */
     private static void findAndPair(ServerLevel level, Entity entity, BreedingState state,
-                                    BreedingRuleManager manager, long now, Set<UUID> registry) {
+                                    long now) {
         EntityType<?> type = entity.getType();
-        List<UUID> candidates;
-        synchronized (registry) {
-            candidates = new ArrayList<>(registry);
-        }
+        List<UUID> candidates = ActiveLoveIndex.INSTANCE.snapshot(level);
         for (UUID otherId : candidates) {
             if (otherId.equals(entity.getUUID())) {
                 continue;
@@ -176,7 +144,7 @@ public final class BreedingController {
 
     /** 两亲本产生后代, 应用冷却并清除 love 需求§5/§35 */
     private static void breed(ServerLevel level, Entity a, Entity b, BreedingRule rule,
-                              long now, Set<UUID> registry) {
+                              long now) {
         BreedingState sa = a.getData(ModAttachments.BREEDING_STATE);
         BreedingState sb = b.getData(ModAttachments.BREEDING_STATE);
 
@@ -205,8 +173,8 @@ public final class BreedingController {
         level.broadcastEntityEvent(a, (byte) 18);
         level.broadcastEntityEvent(b, (byte) 18);
 
-        registry.remove(a.getUUID());
-        registry.remove(b.getUUID());
+        ActiveLoveIndex.INSTANCE.remove(level, a.getUUID());
+        ActiveLoveIndex.INSTANCE.remove(level, b.getUUID());
 
         FishBreedingManager.LOGGER.debug("FBM: {} bred, child spawned",
                 BuiltInRegistries.ENTITY_TYPE.getKey(a.getType()));

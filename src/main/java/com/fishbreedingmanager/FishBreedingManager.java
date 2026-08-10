@@ -1,6 +1,7 @@
 package com.fishbreedingmanager;
 
 import com.fishbreedingmanager.attachment.ModAttachments;
+import com.fishbreedingmanager.breeding.ActiveLoveIndex;
 import com.fishbreedingmanager.breeding.BreedingRuleManager;
 import com.fishbreedingmanager.breeding.ReloadResult;
 import com.fishbreedingmanager.breeding.WorldBreedingService;
@@ -63,7 +64,8 @@ public final class FishBreedingManager {
 
     @SubscribeEvent
     private void onServerStopping(ServerStoppingEvent event) {
-        // Drop the per-server manager so a later world load starts clean (no stale snapshot leak).
+        // 清理只属于当前服务器会话的内存状态，防止下一个存档复用旧 UUID 或快照。
+        ActiveLoveIndex.INSTANCE.clearAll();
         BreedingRuleManager.remove(event.getServer());
     }
 }
