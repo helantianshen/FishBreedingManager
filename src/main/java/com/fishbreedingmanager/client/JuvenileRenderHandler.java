@@ -11,8 +11,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
 
 /**
- * Client render hook that scales juvenile entities to ~50% of adult size, growing to 100% as they
- * mature (requirement §10: juvenile visual ≈ 50%).
+ * 客户端幼体渲染钩子：成年前将实体固定缩放为成年尺寸的约 {@code 50%}，成年时瞬间恢复完整尺寸。
  *
  * <p>Uses {@link RenderLivingEvent.Pre} to push a scale onto the {@link PoseStack} before the entity
  * model is rendered. The scale is read from {@link ClientJuvenileSync}, which is fed by the server's

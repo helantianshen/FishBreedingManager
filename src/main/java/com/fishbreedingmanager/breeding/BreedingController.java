@@ -193,7 +193,7 @@ public final class BreedingController {
                 level.broadcastEntityEvent(child, (byte) 18);
                 // 通知 tracking 客户端这是幼体 客户端 attachment 不自动同步 
                 PacketDistributor.sendToPlayersTrackingEntity(child,
-                        new JuvenileStatePayload(child.getUUID(), now, rule.growthTimeTicks()));
+                        JuvenileStatePayload.fromState(child.getUUID(), childState));
             }
         }
 

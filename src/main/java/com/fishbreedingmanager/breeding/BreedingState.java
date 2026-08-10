@@ -6,31 +6,36 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 /**
- * 实体级运行时繁殖状态, Rule vs State 分离, 规则属世界 状态属实体 
- * 通过 NeoForge AttachmentType 挂到实体上, 随实体 NBT 持久化, 不修改任何实体类 
+ * 实体级运行时繁殖状态，负责保存跨存档仍然有效的 Love、冷却和成长计时器。
+ *
+ * <p>该对象通过 NeoForge AttachmentType 挂载到实体并随实体 NBT 持久化，不要求修改原版实体类。
+ * 配偶 UUID 只用于当前加载会话中的临时导航，因此明确排除在 {@link #CODEC} 之外；实体重新加入世界后会在仍有效的
+ * Love 时间窗中重新寻找配偶。
  *
  * <p>存储字段, 
  * <ul>
  *   <li>{@code inLove} / {@code loveUntil} 临时 love 状态, game-time tick 截止 </li>
  *   <li>{@code cooldownUntil} 繁殖冷却截止, 跨 reload 持久化, 热重载时不重算 需求§38 </li>
- *   <li>{@code juvenile} / {@code adultAt} FBM 自有幼体系统, 用于无原生年龄系统的实体 需求§10, 
- *       {@code adultAt} 热重载时不重算 需求§39 </li>
- *   <li>{@code mate} 求偶中配对配偶的 UUID, 或 {@code null} </li>
+ *   <li>{@code juvenile} / {@code adultAt}：FBM 自有幼体状态，{@code adultAt} 热重载时不重算。</li>
+ *   <li>{@code mate}：仅存在于内存的配偶 UUID，卸载或读档后必须重新匹配。</li>
  * </ul>
  *
- * <p>所有时间字段都是 {@link net.minecraft.world.level.Level#getGameTime()} level game-time tick 
+ * <p>所有时间字段均采用 {@link net.minecraft.world.level.Level#getGameTime()} 的绝对游戏刻。
  */
 public final class BreedingState {
+    /**
+     * 实体附件持久化编解码器。
+     *
+     * <p>这里只保存能够跨加载恢复的五个字段。旧存档中多余的 {@code mate} 字段会被 Mojang Codec 忽略，
+     * 从而在兼容旧数据的同时切断已经失效的配偶关系。
+     */
     public static final Codec<BreedingState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.BOOL.fieldOf("in_love").forGetter(s -> s.inLove),
             Codec.LONG.fieldOf("love_until").forGetter(s -> s.loveUntil),
             Codec.LONG.fieldOf("cooldown_until").forGetter(s -> s.cooldownUntil),
             Codec.BOOL.fieldOf("juvenile").forGetter(s -> s.juvenile),
-            Codec.LONG.fieldOf("adult_at").forGetter(s -> s.adultAt),
-            // mate 存为字符串, 空串表示无配偶 
-            // 只用保证稳定的 Codec.STRING.optionalFieldOf(name, default) API, 避免版本不确定的 UUID helper 
-            Codec.STRING.optionalFieldOf("mate", "").forGetter(s -> s.mate == null ? "" : s.mate.toString())
-    ).apply(instance, BreedingState::decode));
+            Codec.LONG.fieldOf("adult_at").forGetter(s -> s.adultAt)
+    ).apply(instance, BreedingState::new));
 
     private boolean inLove;
     private long loveUntil;
@@ -40,22 +45,16 @@ public final class BreedingState {
     private UUID mate;
 
     public BreedingState() {
-        // 新生成成年实体的默认空状态 
+        // Java 默认值正好表示：成年、无 Love、无冷却、无配偶。
     }
 
     private BreedingState(boolean inLove, long loveUntil, long cooldownUntil,
-                          boolean juvenile, long adultAt, String mateStr) {
+                          boolean juvenile, long adultAt) {
         this.inLove = inLove;
         this.loveUntil = loveUntil;
         this.cooldownUntil = cooldownUntil;
         this.juvenile = juvenile;
         this.adultAt = adultAt;
-        this.mate = mateStr.isEmpty() ? null : UUID.fromString(mateStr);
-    }
-
-    private static BreedingState decode(boolean inLove, long loveUntil, long cooldownUntil,
-                                        boolean juvenile, long adultAt, String mateStr) {
-        return new BreedingState(inLove, loveUntil, cooldownUntil, juvenile, adultAt, mateStr);
     }
 
     // ---- Love ----
@@ -122,6 +121,21 @@ public final class BreedingState {
      */
     public float visualScale(long now) {
         return isJuvenile(now) ? 0.5F : 1.0F;
+    }
+
+    /**
+     * 在实体进入服务端世界时结算计时器并清除临时配偶关系。
+     *
+     * <p>仍处于 Love 时间窗的实体会返回 {@code true}，调用方据此将其重新加入活动索引；过期 Love 则会在
+     * {@link #tickTimers(long)} 中清除。无论 Love 是否有效，都不能沿用卸载前的配偶 UUID。
+     *
+     * @param now 当前世界的绝对游戏刻
+     * @return 实体是否仍处于有效 Love 时间窗
+     */
+    public boolean prepareForLevelJoin(long now) {
+        tickTimers(now);
+        mate = null;
+        return isInLove(now);
     }
 
     // ---- Mate ----
