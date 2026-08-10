@@ -1,8 +1,8 @@
 # Fish Breeding Manager — 项目分析与开发总结
 
-> 用途：本项目开发前的通览总结，供上下文压缩后快速恢复工作状态。
+> 用途：本项目当前实现、架构决策与后续边界的通览总结，供开发接力和上下文恢复使用。
 > 目标：Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的鱼类繁殖管理模组。
-> 编写时间：项目初始阶段（刚下载导入 MDK，尚未开始 FBM 实际开发）。
+> 最近更新：2026-08-11，P0 B-lite 自动化实现完成，交互式客户端验收待执行。
 >
 > 配套需求文档：[`Fish_Breeding_Manager_Requirements.md`](./Fish_Breeding_Manager_Requirements.md)
 
@@ -18,13 +18,18 @@
 
 ### 1.1 工程现状
 
-- 项目根目录：`E:/JavaCodes/FishBreedingManager/MDK-1.21.1-ModDevGradle/`
-- 这是一个**刚下载的 NeoForge 官方 1.21.1 ModDevGradle MDK 模板**，尚未开始 FBM 开发。
-- Git 历史只有 MDK 模板自身的更新（"Update MDK with new output from mod generator"），无任何 FBM 业务提交。
-- 当前源码是 `com.example.examplemod` 的示例代码（ExampleMod / ExampleModClient / Config），含一个示例方块/物品/创造标签。
-- 需求文档 `docs/Fish_Breeding_Manager_Requirements.md` 已就位，内容极其详尽（60 节）。
+- 项目根目录：`E:/JavaCodes/FishBreedingManager/MDK-1.21.1-ModDevGradle/`。
+- 示例 Mod 已完全替换为 `com.fishbreedingmanager` 业务代码，Mod ID 为 `fishbreedingmanager`。
+- P0 B-lite 已实现：四种默认原版鱼规则、喂食 Love、同类型匹配、后代生成、父母冷却、固定 50% 幼体、按存档保存、
+  热更新、实体加载恢复、客户端追踪补发和严格管理员命令。
+- 配置存于主世界 SavedData，同一存档的所有维度共享一套规则；不同存档互相隔离。
+- 所有管理命令在 `/fbm` 根节点严格要求权限等级 2；单人世界未开启作弊时同样不能执行。
+- 已建立 NeoForge JUnit 环境，共 36 个测试；`test`、`build`、`javadoc` 均通过。
+- 交互式 cod 客户端验收尚未人工执行，真实结果记录在
+  [`testing/P0_Cod_Acceptance.md`](./testing/P0_Cod_Acceptance.md)，当前不得宣称 PASS。
+- 第三方鱼兼容验收、Variant/Adapter、管理 GUI 和实体预览仍未实现。
 
-### 1.2 完整文件结构
+### 1.2 当前核心文件结构
 
 ```
 MDK-1.21.1-ModDevGradle/
@@ -36,28 +41,25 @@ MDK-1.21.1-ModDevGradle/
 ├── README.md                             # 一句话描述
 ├── docs/
 │   ├── Fish_Breeding_Manager_Requirements.md   # ★ 需求文档（权威）
-│   └── Project_Analysis_and_Summary.md         # ★ 本文档
+│   ├── Project_Analysis_and_Summary.md         # ★ 当前状态与架构总结
+│   └── testing/P0_Cod_Acceptance.md            # ★ 交互式验收记录
 └── src/main/
-    ├── java/com/example/examplemod/      # 示例代码，待替换为 FBM
-    │   ├── ExampleMod.java
-    │   ├── ExampleModClient.java
-    │   └── Config.java
-    ├── resources/assets/examplemod/lang/en_us.json
-    └── templates/META-INF/neoforge.mods.toml   # 模板，含 ${} 占位符
+    ├── java/com/fishbreedingmanager/
+    │   ├── breeding/                    # Rule、State、Snapshot、服务、索引与生成器
+    │   ├── persistence/                 # 按存档共享的 SavedData
+    │   ├── event/                       # 喂食和实体生命周期
+    │   ├── network/ 与 client/          # 幼体视觉状态同步和渲染
+    │   └── command/                     # 权限等级 2 的管理员命令
+    ├── resources/assets/fishbreedingmanager/lang/  # 中英文命令反馈
+    └── templates/META-INF/neoforge.mods.toml
 ```
 
-### 1.3 启动开发第一步必须做的工程改造
+### 1.3 当前开发规范
 
-1. **改包名**：`com.example.examplemod` → `com.fishbreedingmanager`（或自定）。建议包 `net.fbm` / `dev.fbm` 等。
-2. **改 gradle.properties**：
-   - `mod_id=examplemod` → `mod_id=fishbreedingmanager`
-   - `mod_name=Example Mod` → `mod_name=Fish Breeding Manager`
-   - `mod_license` → 选定（建议 MIT / LGPL-2.1）
-   - `mod_version=1.0.0`
-   - `mod_group_id=com.example.examplemod` → 新包名
-3. **改 neoforge.mods.toml**：description、依赖范围等。
-4. **删除/替换示例代码**：ExampleMod 的方块/物品/创造标签逻辑不属于 FBM，应清空重建主类。
-5. **保留** ModDevGradle 构建配置、wrapper、CI 工作流。
+- 新增或修改的公共类型、公共 API 与关键私有流程必须包含详细中文 Javadoc。
+- 文档注释允许并鼓励使用 IDEA/标准 Javadoc 语法：`<p>`、`<ul>`、`{@link}`、`{@code}`、`@param`、`@return`。
+- 功能变更遵循失败测试 → 最小实现 → 全量回归；生成失败、规则校验失败等路径必须有明确结果类型。
+- 规则属于世界，运行计时状态属于实体；禁止把规则缓存到 Attachment。
 
 ---
 
@@ -176,9 +178,13 @@ public class WorldBreedingData extends SavedData {
 - `computeIfAbsent` 第二参数是**文件名字符串**（存到 `<world>/data/<name>.dat`），不是 `ResourceLocation`。
 - 跨维度共享数据应挂到 Overworld（`server.overworld().getDataStorage()`）。
 - `setDirty()` 必须在修改后调用，否则不写盘。
-- FBM 是**每世界独立配置**（需求 §23），所以应挂在**每个 ServerLevel 各自**的 `getDataStorage()` 上，而不是全局 server。每个维度（主世界/下界/末地）各自独立。注意：鱼通常在主世界，但第三方 Mod 可能在其他维度有鱼，按"每世界独立"语义，每个 ServerLevel 一份即可。
+- FBM 是**每个存档独立配置**（需求 §23），当前确认语义为同一存档跨维度共享，因此统一挂到
+  `server.overworld().getDataStorage()`；不能为每个维度分别保存，也不能使用全局 `config` 文件。
 
-### 3.4 Networking（GUI ↔ 服务端通信）
+### 3.4 Networking（P0 幼体同步与未来 GUI 参考）
+
+> 当前 P0 只实现服务端到客户端的 `JuvenileStatePayload`。下列双向 `UpdateRulePayload` 是未来 GUI 的 API 参考，
+> 尚未存在于源码，届时必须复用 `WorldBreedingService` 和权限等级 2 校验。
 
 文档（1.21.1 版）已核对。用法：
 
@@ -216,34 +222,36 @@ PacketDistributor.sendToAllPlayers(...);
 - 默认在主线程执行；重计算用 `.executesOn(HandlerThread.NETWORK)`。
 - 客户端 payload handler 在 1.21.1 用 `DirectionalPayloadHandler`，**不是**新版的 `RegisterClientPayloadHandlersEvent`。
 
-### 3.5 喂食/繁殖相关 vanilla API（需在 PoC 中验证）
+### 3.5 喂食/繁殖相关 vanilla API（P0 已验证）
 
 > 这些是 vanilla MC 1.21.1（Mojang mappings + Parchment）的 API，FBM 需复用以接近原版表现。
 
 - **进入 Love 状态**：vanilla `Animal#setInLove(Player)` / `Mob#setInLoveTime(int)` / `isInLove()`。但 FBM 目标实体**可能不是 Animal**（需求 §10），所以 FBM **用自己的 BreedingState.inLove**，不依赖 vanilla love 系统。
 - **爱心粒子**：`level.broadcastEntityEvent(entity, (byte)18)` 触发客户端爱心粒子（vanilla Animal 用法），或 `ServerLevel#sendParticles(ParticleTypes.HEART, ...)`。
 - **消耗手持物品**：`ItemStack#shrink(1)` 或 `Player.getUseItem().shrink(...)`，参考 `Animal#usePlayerItem`。
-- **配偶搜索**：`ServerLevel#getAllEntities()` 或 `level.getEntitiesOfClass(Class, AABB)` / `level.getNearbyEntities(...)`，按 EntityType 过滤、半径 AABB 查询。
+- **配偶搜索**：`ActiveLoveIndex` 按 Level 保存 Love 实体 UUID，控制器只在索引快照中按 EntityType、距离和状态过滤，禁止扫描全世界实体。
 - **寻路靠近**：`Mob#getNavigation().moveTo(Entity, double speed)`。非 Mob 实体无 Navigation → 降级为"仅生成后代不主动寻路"（需求 §42 Partial 兼容等级）。
 - **生成后代**：`EntityType.create(Level)` 创建同类型实例，设置位置，`level.addFreshEntity(child)`。或 `entityType.create(level, CompoundTag, Consumer, BlockPos, Rotation, boolean, MobSpawnType)`。
 - **繁殖冷却**：vanilla `Animal#setAge(growthTime)` 同时承担冷却与成长；FBM 自己用 `BreedingState.cooldownUntil`（gameTime tick）。
-- **Ingredient（繁殖物品）**：`net.minecraft.world.item.crafting.Ingredient`，`Ingredient.of(ItemStack...)` / `Ingredient.of(TagKey<Item>)`，`ingredient.test(ItemStack)` 判断是否匹配。序列化用 `Ingredient.CODEC`（1.21.1 中需核实确切常量名，可能是 `Ingredient.CODEC` / `Ingredient.VANILLA_CODEC`）。
+- **繁殖物品抽象**：`BreedingRule` 保存多个物品 ID 与物品标签 ID，运行时用 `ItemStack#is(Item)` / `ItemStack#is(TagKey)` 匹配，语义等价于 P0 所需 Ingredient 子集且 NBT 格式稳定。
 - **Variant 继承**：vanilla `TropicalFish` 用 `SynchedEntityData` 存 variant（`TropicalFish.DATA_ID_TYPE_VARIANT` 等）。FBM v1 对**无法通用识别**的第三方 variant **只创建默认个体**（需求 §12.1），不反射/不 ASM。原版热带鱼可后续用 `BreedingAdapter` 专门适配。
 
-### 3.6 命令（`/fbm reload`）
+### 3.6 管理命令（P0 已实现）
 
 ```java
 @SubscribeEvent
 public static void onRegisterCommands(RegisterCommandsEvent event) {
     CommandDispatcher<CommandSourceStack> dispatcher = event.getDispatcher();
     dispatcher.register(Commands.literal("fbm")
-        .requires(cs -> cs.hasPermission(2))   // OP 权限
-        .then(Commands.literal("reload")
-            .executes(ctx -> reloadRules(ctx.getSource()))));
+        .requires(source -> source.hasPermission(2))
+        .then(Commands.literal("reload") /* ... */)
+        .then(Commands.literal("rule")
+            /* list/show/set/enable/disable/remove */));
 }
 ```
 
-Brigadier API：`com.mojang.brigadier`。权限等级 2 = OP（需求 §21）。
+权限放在根节点，所有子命令严格要求等级 2；未开启作弊的单人世界也不例外。修改命令统一调用
+`WorldBreedingService`，先校验完整候选集合，再同时提交 SavedData 与运行时 Snapshot。
 
 ### 3.7 实体身份与注册表
 
@@ -271,9 +279,9 @@ Brigadier API：`com.mojang.brigadier`。权限等级 2 = OP（需求 §21）。
 ┌─────────────────────────────────────────────────────────┐
 │  Runtime Engine 层（属于服务端，集中式）                    │
 │  BreedingController (LevelTickEvent.Pre 驱动)            │
-│    ├─ 收集 inLove 实体 → 配对 → moveTo → 生成后代          │
-│    └─ JuvenileController (处理幼体成长计时+客户端缩放同步)  │
-│  InteractionHandler (PlayerInteractEvent.EntityInteract) │
+│    ├─ ActiveLoveIndex → 配对 → moveTo                     │
+│    └─ ChildSpawner → 成功后提交冷却与 Love 清理             │
+│  EntityInteractionHandler / EntityLifecycleHandler       │
 │    └─ 喂食 → 写 BreedingState.inLove                     │
 └─────────────────────────────────────────────────────────┘
                           │  getData/setData
@@ -281,8 +289,9 @@ Brigadier API：`com.mojang.brigadier`。权限等级 2 = OP（需求 §21）。
 ┌─────────────────────────────────────────────────────────┐
 │  State 层（属于单个 Entity）                               │
 │  BreedingState (Data Attachment, Codec 序列化)            │
-│   { inLove, loveUntil, cooldownUntil, juvenile,          │
-│     adultAt, mate:UUID }                                 │
+│   持久化: { inLove, loveUntil, cooldownUntil,             │
+│             juvenile, adultAt }                          │
+│   仅内存: { mate:UUID }，实体重载后重新匹配                 │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -293,14 +302,14 @@ Brigadier API：`com.mojang.brigadier`。权限等级 2 = OP（需求 §21）。
 - Reload 流程：读 WorldBreedingData → 完整解析 → 完整校验 → 成功才 `snapshot = newSnapshot`（原子替换）；失败保留旧快照。
 - **所有行为每次发生时查当前 snapshot**（`ruleManager.find(entity.getType())`），**绝不**把规则缓存进实体。
 - **计时器不追溯**（需求 §38-§39）：`cooldownUntil`/`adultAt` 按出生/繁殖时计算，规则热重载后**已存在的计时不变**，新事件采用新规则。这显著降低复杂度。
-- Reload 入口：GUI Save（自动）+ `/fbm reload`（手动）。
+- 当前入口：`/fbm reload` 与 `/fbm rule set|enable|disable|remove`；未来 GUI Save 必须复用同一服务层。
 - **禁止** ASM/Mixin/字节码永久注入作为主路线（需求 §29），因为 Class 加载后难撤销、热重载困难、兼容风险高。
 
 ### 4.3 繁殖行为流程（需求 §4, §35-§36）
 
 ```
 玩家右键喂食鱼A (PlayerInteractEvent.EntityInteract)
-  → rule = find(A.type); rule.ingredient.test(heldItem)?
+  → rule = find(A.type); rule.testFood(heldItem)?
   → stateA.canBreed()? (未冷却、非幼体)
   → stateA.inLove=true; loveUntil=now+loveDuration; 消耗物品; 爱心粒子
 玩家右键喂食鱼B (同上) → stateB.inLove=true
@@ -310,7 +319,9 @@ BreedingController (每 N tick, 仅遍历 inLove 实体):
   → stateA.mate=B.uuid; stateB.mate=A.uuid
   → A.navigation.moveTo(B); B.navigation.moveTo(A)
   → 距离 ≤ 阈值:
-      → 生成 child = A.type.create(level) [Variant: 默认个体 / 随机继承父母]
+      → 生成 child = A.type.create(level)，并尝试 addFreshEntity(child)
+      → 创建/加入失败：只解除 mate，保留 Love 与空闲冷却以便重试
+      → 加入成功后：
       → child BreedingState: juvenile=true; adultAt=now+rule.growthTime
       → stateA.cooldownUntil=now+rule.cooldown; stateB 同
       → stateA.inLove=false; stateB.inLove=false
@@ -319,9 +330,9 @@ BreedingController (每 N tick, 仅遍历 inLove 实体):
 
 ### 4.4 幼体机制（需求 §10）
 
-- 优先适配原生年龄系统（如 `AgeableMob#setAge`）；无则 FBM 自维护 `juvenile` + `adultAt`。
-- 客户端视觉缩放：默认幼体 ≈ 成年 50%，通过 **客户端渲染事件**（`RenderEvent` / entity render hook）按 `BreedingState` 缩放，**不修改**实体类。
-- 需把 juvenile 状态同步到客户端（Data Attachment 在 1.21.1 需手动发包，或借 `SynchedEntityData`——但第三方实体不让动，故用 FBM 自己的 payload 同步）。
+- P0 统一由 FBM 自维护 `juvenile` + `adultAt`，不依赖目标实体是否实现原生年龄系统。
+- 客户端视觉缩放：成年前固定为 50%，到达 `adultAt` 瞬间恢复 100%，不进行平滑插值，也不修改逻辑碰撞箱。
+- `JuvenileStatePayload` 只同步实体 UUID 与绝对成年时刻；出生时广播，玩家后来开始追踪时补发，退出连接时清缓存。
 
 ### 4.5 实体发现（需求 §13-§16, §46）
 
@@ -337,56 +348,51 @@ CandidateEntityFilter (多策略组合)
 
 ### 4.6 权限与网络（需求 §21-§22）
 
-- 单机：玩家可改。服务端：仅 OP(perm level 2) 可改，普通玩家只读（"查看"可考虑允许）。
-- **服务端是规则唯一权威**。客户端 GUI 修改 → `UpdateRulePayload` 发服务端 → 服务端**再次校验权限+参数+Registry** → 写 WorldBreedingData → setDirty → Atomic Swap snapshot → 可选 `SyncRulesPayload` 回发所有客户端。
+- 单机与专用服务端统一要求权限等级 2；未开启作弊的单人世界玩家无权查看或修改 `/fbm` 命令树。
+- **服务端是规则唯一权威**。当前命令直接调用事务服务；未来客户端 GUI Payload 必须在服务端再次校验权限、参数和 Registry，
+  并复用相同的 SavedData + Snapshot 提交路径。
 - 不能只靠客户端隐藏按钮（需求 §21 安全要求）。
 
-### 4.7 建议包结构（需求 §57）
+### 4.7 当前包结构与后续预留
 
 ```
 fishbreedingmanager/
 ├── FishBreedingManager.java          # @Mod 主类
 ├── breeding/
-│   ├── BreedingRule.java             # record: entityType, ingredient, cooldown, growthTime
+│   ├── BreedingRule.java             # 不可变规则
 │   ├── BreedingRuleSnapshot.java     # 不可变快照 record
-│   ├── BreedingRuleManager.java      # volatile snapshot + find() + reload()
+│   ├── BreedingRuleManager.java      # volatile snapshot + 动态查询
+│   ├── WorldBreedingService.java     # 校验后事务提交 SavedData + Snapshot
 │   ├── BreedingController.java       # LevelTickEvent 驱动配对/寻路/繁殖
 │   ├── BreedingState.java            # Data Attachment 值对象 + Codec
-│   ├── ChildSpawner.java             # 创建后代 + Variant 处理
-│   ├── JuvenileController.java       # 幼体成长 + 客户端缩放同步
-│   └── VariantHandler.java           # 原版热带鱼等已知 variant 适配
+│   ├── ActiveLoveIndex.java          # 按 Level 隔离的活动 UUID 索引
+│   └── ChildSpawner.java             # 创建后代并返回结构化结果
 ├── attachment/ModAttachments.java    # DeferredRegister<AttachmentType>
 ├── event/
 │   ├── EntityInteractionHandler.java # PlayerInteractEvent.EntityInteract
-│   ├── ServerTickHandler.java        # LevelTickEvent / ServerTickEvent
-│   └── EntityLifecycleHandler.java   # EntityJoinLevelEvent
-├── persistence/
-│   ├── WorldBreedingData.java        # SavedData
-│   └── RuleCodec.java                # BreedingRule/规则集合的 Codec
-├── command/FBMCommand.java           # /fbm reload
+│   └── EntityLifecycleHandler.java   # Join/Leave + StartTracking
+├── persistence/WorldBreedingData.java # 主世界 SavedData，跨维度共享
+├── command/FBMCommands.java          # /fbm reload + rule 管理命令
 ├── network/
 │   ├── ModNetworking.java            # RegisterPayloadHandlersEvent
-│   ├── UpdateRulePayload.java
-│   ├── ImportEntityPayload.java
-│   └── SyncRulesPayload.java
+│   └── JuvenileStatePayload.java     # 服务端到客户端幼体时刻
 ├── client/
-│   ├── screen/  (FBMScreen, widgets)
-│   ├── widget/
-│   └── render/  (幼体缩放、3D 预览)
-├── discovery/
-│   ├── EntityDiscoveryService.java
-│   ├── CandidateEntityFilter.java
-│   └── ImportedEntityStore.java
-└── compat/adapter/  (未来 BreedingAdapter API, v1 预留)
+│   ├── ClientJuvenileSync.java
+│   └── JuvenileRenderHandler.java
+└── 未来预留：client/screen、discovery、compat/adapter
 ```
 
 ---
 
 ## 5. 开发阶段与验收（需求 §49-§54）
 
-### 5.1 P0 — 核心 PoC（先做，不要先做 GUI！需求 §50）
+### 5.1 P0 B-lite — 自动化实现完成，交互验收待执行
 
-按顺序：实体识别 → WorldBreedingData → Runtime Snapshot → Atomic Swap → BreedingState Attachment → 喂食 → Love → 配偶搜索 → 寻路 → 生成后代 → 幼体 → 冷却 → `/fbm reload` → 第三方实体验证。
+已完成：WorldBreedingData → Runtime Snapshot → 事务校验与原子替换 → BreedingState Attachment → 喂食 → Love →
+配偶搜索 → 寻路 → 生成后代 → 幼体 → 冷却 → 生命周期恢复 → `/fbm rule` 管理命令。
+
+自动化层已有 36 个 JUnit 测试并通过完整构建；实际客户端中的爱心、寻路、模型尺寸和权限可见性仍必须按
+[`testing/P0_Cod_Acceptance.md`](./testing/P0_Cod_Acceptance.md) 人工观察，因此当前 P0 不能标为最终验收 PASS。
 
 **第一阶段 PoC 验收（需求 §52，必须全打通）**：用 `minecraft:cod`，规则 `kelp / cooldown=600t / growth=1200t`：
 1. 原版 cod 默认不可繁殖；2. 装 FBM 后加载 cod 规则；
@@ -397,9 +403,10 @@ fishbreedingmanager/
 
 **第二阶段第三方验收（需求 §53）**：选一个原无繁殖的第三方鱼，重复以上能力 + 手动导入 + 持久化 + 热重载。
 
-### 5.2 P1 — GUI 与权限
+### 5.2 P1 — 第三方实体与 GUI
 
-Entity Browser GUI、默认筛选、高级 Registry 搜索、导入持久化、Rule Editor、权限、Network Sync、GUI Save→热重载。验收见需求 §54。
+第三方鱼兼容验收、Entity Browser GUI、默认筛选、高级 Registry 搜索、导入持久化、Rule Editor、GUI Network Sync
+和 GUI Save→热更新。命令权限已在 P0 以根节点权限等级 2 实现，GUI 将复用同一服务端权限语义。
 
 ### 5.3 P2 — 增强
 
@@ -413,7 +420,7 @@ Entity Browser GUI、默认筛选、高级 Registry 搜索、导入持久化、R
 
 ## 6. 关键约束与易错点清单（开发时反复核对）
 
-1. **每世界独立配置**：挂每个 ServerLevel 各自的 `getDataStorage()`，不要全局共享 `config/fbm-rules.json`（需求 §23）。
+1. **每存档独立且跨维度共享配置**：统一挂主世界 `getDataStorage()`，不要按维度拆分，也不要全局共享 `config/fbm-rules.json`。
 2. **Rule vs State 分离**：规则属世界（运行时动态查询），状态属实体（不缓存规则副本）——否则热重载不影响现存实体（需求 §31, §34）。
 3. **Atomic Swap**：规则解析成不可变 snapshot，`volatile` 引用，整体替换；配置错误保留旧 snapshot（需求 §32-§33）。
 4. **计时器不追溯**：`cooldownUntil`/`adultAt` 不因热重载重算（需求 §38-§39）。
@@ -450,10 +457,10 @@ Entity Browser GUI、默认筛选、高级 Registry 搜索、导入持久化、R
 
 ## 8. 下一步行动建议
 
-1. **工程改造**：改 mod_id/包名/gradle.properties/mods.toml，清空示例代码，建立 §4.7 包结构骨架。
-2. **建立 Mod 主类 + DeferredRegister**（attachments、commands、networking 注册）。
-3. **实现 P0 最小闭环**（按 §5.1 顺序），目标实体 `minecraft:cod`。
-4. **打通热重载验收 11 项**（§5.1 第10-11步是核心风险点）。
-5. PoC 通过后再进入第三方实体验证与 GUI。
+1. 启动开发客户端，按 `docs/testing/P0_Cod_Acceptance.md` 完成 cod、权限和 Love 跨区块加载的真实观察。
+2. 对任何 FAIL 附日志行号并先修复 P0，不得把未观察行为写成 PASS。
+3. 选择一个原本不可繁殖的第三方鱼执行兼容验收，确认默认后代和无通用导航时的降级行为。
+4. 在当前事务服务和严格权限边界上继续实现 Entity Browser 与 Rule Editor GUI。
+5. GUI 稳定后再设计 Variant 继承和 BreedingAdapter API，避免提前绑定第三方私有实现。
 
 > 开发原则重申（需求 §58）：优先查 1.21.1 官方文档/API → 不确定查 NeoForged 源码 → 不套用旧 Forge 教程 → 不提前 ASM → 不过度抽象 → 先证明 cod PoC → 每阶段保证热重载不破坏。
