@@ -1,0 +1,4 @@
+{
+  "commands.fbm.reload.success": "Fish Breeding Manager rules reloaded (%s rule(s)).",
+  "commands.fbm.reload.failed": "Fish Breeding Manager reload failed: %s"
+}
