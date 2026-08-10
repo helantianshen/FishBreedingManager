@@ -1,0 +1,10 @@
+{
+  "commands.fbm.reload.success": "Fish Breeding Manager 已重新加载，共 %s 条规则。",
+  "commands.fbm.reload.failed": "Fish Breeding Manager 重新加载失败：%s",
+  "commands.fbm.rule.updated": "已更新 %s 的繁殖规则，当前共 %s 条规则。",
+  "commands.fbm.rule.removed": "已删除 %s 的繁殖规则，当前共 %s 条规则。",
+  "commands.fbm.rule.enabled": "已启用 %s 的繁殖规则，当前共 %s 条规则。",
+  "commands.fbm.rule.disabled": "已禁用 %s 的繁殖规则，当前共 %s 条规则。",
+  "commands.fbm.rule.not_found": "未找到 %s 的繁殖规则。",
+  "commands.fbm.rule.failed": "规则操作失败：%s"
+}

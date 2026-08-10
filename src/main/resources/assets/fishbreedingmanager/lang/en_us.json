@@ -1,4 +1,10 @@
 {
   "commands.fbm.reload.success": "Fish Breeding Manager rules reloaded (%s rule(s)).",
-  "commands.fbm.reload.failed": "Fish Breeding Manager reload failed: %s"
+  "commands.fbm.reload.failed": "Fish Breeding Manager reload failed: %s",
+  "commands.fbm.rule.updated": "Updated the breeding rule for %s; %s rule(s) are now configured.",
+  "commands.fbm.rule.removed": "Removed the breeding rule for %s; %s rule(s) remain.",
+  "commands.fbm.rule.enabled": "Enabled the breeding rule for %s; %s rule(s) are configured.",
+  "commands.fbm.rule.disabled": "Disabled the breeding rule for %s; %s rule(s) are configured.",
+  "commands.fbm.rule.not_found": "No breeding rule was found for %s.",
+  "commands.fbm.rule.failed": "Breeding rule operation failed: %s"
 }
