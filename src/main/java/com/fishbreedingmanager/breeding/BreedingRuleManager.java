@@ -11,7 +11,7 @@ import net.minecraft.world.entity.EntityType;
 /**
  * 单服务器运行时持有当前 {@link BreedingRuleSnapshot} 
  *
- * <p>快照以 {@code volatile} 引用持有, {@link #reload} 时原子替换 需求§33 
+ * <p>快照以 {@code volatile} 引用持有，由 {@link WorldBreedingService#reload} 或事务修改入口原子替换。
  * 所有行为通过 {@link #find} 动态查询快照, 规则绝不缓存到实体, 
  * 故热重载立即影响现存实体 需求§34 
  *
@@ -31,29 +31,64 @@ public final class BreedingRuleManager {
     BreedingRuleManager() {
     }
 
-    /** 返回 给定服务器 的规则管理器, 不存在则创建 */
+    /**
+     * 返回与指定服务器生命周期绑定的运行时规则管理器。
+     *
+     * <p>管理器只持有不可变 {@link BreedingRuleSnapshot} 的易失引用。调用方不得把查询到的规则缓存到实体附件，
+     * 否则现存实体将无法立即响应热更新。
+     *
+     * @param server 当前逻辑服务器
+     * @return 该服务器唯一的规则管理器
+     */
     public static BreedingRuleManager get(MinecraftServer server) {
         return MANAGERS.computeIfAbsent(server, s -> new BreedingRuleManager());
     }
 
-    /** 移除停止中服务器的管理器, 防止跨世界加载泄漏 */
+    /**
+     * 移除已经停止服务器的管理器，防止下一存档复用旧 Snapshot。
+     *
+     * @param server 正在停止的逻辑服务器
+     */
     public static void remove(MinecraftServer server) {
         MANAGERS.remove(server);
     }
 
+    /**
+     * 返回当前不可变运行时快照。
+     *
+     * @return 最近一次成功安装的完整快照
+     */
     public BreedingRuleSnapshot snapshot() {
         return snapshot;
     }
 
+    /**
+     * 按稳定实体注册表 ID 查询当前规则。
+     *
+     * @param entityId 实体注册表 ID
+     * @return 当前规则；未配置时返回 {@code null}
+     */
     public BreedingRule find(ResourceLocation entityId) {
         return snapshot.rules().get(entityId);
     }
 
+    /**
+     * 将实体类型转换为注册表 ID 后查询当前规则。
+     *
+     * @param entityType 当前实体类型
+     * @return 当前规则；类型未注册或未配置时返回 {@code null}
+     */
     public BreedingRule find(EntityType<?> entityType) {
         ResourceLocation id = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
         return id != null ? find(id) : null;
     }
 
+    /**
+     * 判断当前快照是否包含指定实体规则，不考虑规则是否启用。
+     *
+     * @param entityId 实体注册表 ID
+     * @return 快照包含该键时返回 {@code true}
+     */
     public boolean hasRule(ResourceLocation entityId) {
         return snapshot.rules().containsKey(entityId);
     }

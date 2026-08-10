@@ -15,6 +15,12 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class ChildSpawner {
     /**
+     * 创建无内部状态的后代生成器。
+     */
+    public ChildSpawner() {
+    }
+
+    /**
      * 尝试在两亲本中点生成与第一亲本相同实体类型的幼体。
      *
      * @param level 后代应加入的服务端 Level

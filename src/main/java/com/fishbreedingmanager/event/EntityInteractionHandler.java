@@ -20,20 +20,27 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
- * 喂食处理, 玩家右键实体且手持配置的繁殖物品时, 实体进入 FBM love 需求§4/§35 
- * 喂食是非侵入的, 用 {@link PlayerInteractEvent.EntityInteract} 事件而非修改任何实体类 
+ * 服务端喂食交互处理器：玩家用当前规则食物右键实体时，使其进入 FBM Love。
  *
- * <p>规则从当前运行时快照动态查询 需求§34, 实体自身的 {@link BreedingState} 持有临时 love 计时器 
+ * <p>规则从当前运行时快照动态查询，实体自身的 {@link BreedingState} 持有 Love 绝对截止时间。
  * 进入 Love 后注册到 {@link ActiveLoveIndex}，使控制器无需每 tick 扫描全世界实体即可寻找配偶。
  */
 @EventBusSubscriber(modid = FishBreedingManager.MOD_ID)
 public final class EntityInteractionHandler {
-    /** 喂食后的 love 窗口 tick, 原版动物约 600 (30s) */
+    /** 喂食后固定 600 游戏刻（约 30 秒）的 Love 时间窗。 */
     public static final long LOVE_DURATION_TICKS = 600L;
 
     private EntityInteractionHandler() {
     }
 
+    /**
+     * 在逻辑服务端处理实体右键喂食并决定是否消费原交互。
+     *
+     * <p>没有 FBM 规则、规则禁用或手持物不匹配时直接返回，不取消事件，允许原版和其他 Mod 继续处理。仅当 FBM
+     * 实际使实体进入 Love 后才消耗一个物品、播放爱心并取消后续处理。
+     *
+     * @param event NeoForge 玩家右键实体事件
+     */
     @SubscribeEvent
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
         if (event.getLevel().isClientSide()) {

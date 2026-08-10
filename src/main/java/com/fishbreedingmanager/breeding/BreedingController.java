@@ -20,20 +20,18 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * 集中式运行时繁殖引擎 需求§31, Rule vs State vs Engine 分离 
+ * 服务端权威的集中式运行时繁殖引擎，保持 Rule、State 与 Engine 分离。
  *
- * <p>服务端由 {@link LevelTickEvent.Pre} 驱动, 每 {@link ServerLevel} 维护内存 <b>love registry</b> 
- * 只跟踪当前处于 FBM love 的实体, 故引擎不会每 tick 扫全图 需求§37 
- * 每 tick 节流 后, 
+ * <p>引擎由 {@link LevelTickEvent.Pre} 驱动，通过 {@link ActiveLoveIndex} 只遍历当前 Level 中处于 FBM Love 的实体，
+ * 不扫描全世界。每五个游戏刻执行一次以下流程：
  * <ol>
- *   <li>丢弃规则被删/禁用的实体, 清除其 FBM love 需求§28 </li>
- *   <li>结算过期的 love </li>
- *   <li>在搜索半径内配对同类型 in-love 实体并寻路靠近 </li>
- *   <li>配对足够近时生成同类型后代 需求§5 不杂交, 
- *       标记幼体, 给父母冷却, 清除 love </li>
+ *   <li>清理实体缺失、规则删除/禁用或 Love 过期的索引；</li>
+ *   <li>在搜索半径内为同类型、可用的 Love 实体建立双向临时配对；</li>
+ *   <li>寻路靠近并在生成前重新验证双方状态；</li>
+ *   <li>仅在同类型后代成功加入世界后提交父母冷却与 Love 清除。</li>
  * </ol>
  *
- * <p>规则从 {@link BreedingRuleManager} 动态查询, 实体上的计时器 reload 时绝不重算 需求§38/§39 
+ * <p>每轮都从 {@link BreedingRuleManager} 动态查询规则，热更新立即影响现存实体；附件上的冷却与成长截止时间不重算。
  */
 @EventBusSubscriber(modid = FishBreedingManager.MOD_ID)
 public final class BreedingController {
@@ -52,6 +50,11 @@ public final class BreedingController {
     private BreedingController() {
     }
 
+    /**
+     * 在服务端 Level 的节流 tick 中推进清理、匹配、寻路与繁殖。
+     *
+     * @param event NeoForge Level tick 前置事件
+     */
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Pre event) {
         if (!(event.getLevel() instanceof ServerLevel level)) {
@@ -100,7 +103,15 @@ public final class BreedingController {
         }
     }
 
-    /** 已配对, 向配偶移动, 足够近则繁殖 */
+    /**
+     * 验证已配对双方，保持寻路并在距离足够近时尝试繁殖。
+     *
+     * @param level 当前服务端 Level
+     * @param entity 当前处理实体
+     * @param state 当前实体状态
+     * @param rule 当前动态规则
+     * @param now 当前绝对游戏刻
+     */
     private static void handlePaired(ServerLevel level, Entity entity, BreedingState state,
                                      BreedingRule rule, long now) {
         Entity mate = level.getEntity(state.getMate());
@@ -121,7 +132,14 @@ public final class BreedingController {
         }
     }
 
-    /** 未配对, 寻找附近同类型 in-love 伙伴并互相认定 */
+    /**
+     * 为未配对实体寻找附近同类型可用伙伴，并建立双向临时 UUID 引用。
+     *
+     * @param level 当前服务端 Level
+     * @param entity 当前处理实体
+     * @param state 当前实体状态
+     * @param now 当前绝对游戏刻
+     */
     private static void findAndPair(ServerLevel level, Entity entity, BreedingState state,
                                     long now) {
         EntityType<?> type = entity.getType();
@@ -145,7 +163,7 @@ public final class BreedingController {
             if (entity.distanceToSqr(other) > SEARCH_RADIUS_SQR) {
                 continue;
             }
-            // 互相认定 
+            // 配偶引用必须双向写入，后续生成前会再次验证互相指向。
             state.setMate(other.getUUID());
             otherState.setMate(entity.getUUID());
             navigateToward(entity, other);
@@ -261,11 +279,16 @@ public final class BreedingController {
         }
     }
 
-    /** 若 {@code self} 有寻路则向 {@code target} 移动, 非 Mob 实体无法寻路 */
+    /**
+     * 若实体属于 {@link Mob} 则使用原生导航向配偶移动；非 Mob 实体保持原位但仍兼容近距离生成。
+     *
+     * @param self 需要移动的实体
+     * @param target 目标配偶
+     */
     private static void navigateToward(Entity self, Entity target) {
         if (self instanceof Mob mob) {
             mob.getNavigation().moveTo(target, NAV_SPEED);
         }
-        // 非 Mob 实体 部分兼容 需求§42 跳过寻路 
+        // 非 Mob 实体没有通用导航 API，跳过移动而不破坏其他繁殖状态。
     }
 }

@@ -18,6 +18,12 @@ import net.minecraft.world.item.Item;
  */
 public final class RuleValidator {
     /**
+     * 创建直接查询当前 Minecraft 内建注册表的规则校验器。
+     */
+    public RuleValidator() {
+    }
+
+    /**
      * 校验一条繁殖规则的注册表引用、食物来源和计时参数。
      *
      * @param rule 待校验的候选规则

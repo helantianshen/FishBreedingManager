@@ -15,9 +15,16 @@ public final class ModNetworking {
     private ModNetworking() {
     }
 
+    /**
+     * 注册服务端到客户端的幼体状态 Payload 与处理器。
+     *
+     * <p>协议版本 {@code 1} 当前只传输实体 UUID 与绝对成年时刻；客户端不会据此参与任何权威状态判断。
+     *
+     * @param event NeoForge Payload 处理器注册事件
+     */
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1");
-        // 服务端 → 客户端, 通知某子代是幼体 用于视觉缩放 
+        // 服务端到客户端：通知某个被追踪实体在何时瞬间恢复成年尺寸。
         registrar.playToClient(
                 JuvenileStatePayload.TYPE,
                 JuvenileStatePayload.STREAM_CODEC,

@@ -15,9 +15,15 @@ public final class DefaultRules {
     private DefaultRules() {
     }
 
-    /** 把默认原版鱼规则种入给定数据存储, 已存在则安全无操作 */
+    /**
+     * 向新建世界数据种入四种默认启用的原版鱼规则。
+     *
+     * <p>该方法只由新数据工厂调用；读取已有存档或用户主动删空规则时不会再次执行，因此不会覆盖玩家配置。
+     *
+     * @param data 尚无持久化文件的新世界规则数据
+     */
     public static void seedInto(WorldBreedingData data) {
-        // PoC 目标 需求§51, cod + kelp, 冷却 600t, 成长 1200t 
+        // 默认冷却 600 刻、成长 1200 刻；玩家可通过管理员命令逐条修改。
         data.putRule(new BreedingRule(
                 ResourceLocation.parse("minecraft:cod"),
                 List.of(ResourceLocation.parse("minecraft:kelp")),

@@ -48,6 +48,11 @@ public record JuvenileStatePayload(UUID entityUuid, long adultAt) implements Cus
         return new JuvenileStatePayload(entityUuid, state.getAdultAt());
     }
 
+    /**
+     * 返回 NeoForge 用于路由本 Payload 的类型标识。
+     *
+     * @return {@link #TYPE} 单例
+     */
     @Override
     public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
         return TYPE;
