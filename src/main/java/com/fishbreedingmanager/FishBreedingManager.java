@@ -6,6 +6,7 @@ import com.fishbreedingmanager.breeding.BreedingRuleManager;
 import com.fishbreedingmanager.breeding.ReloadResult;
 import com.fishbreedingmanager.breeding.WorldBreedingService;
 import com.fishbreedingmanager.command.FBMCommands;
+import com.fishbreedingmanager.event.EntityLifecycleHandler;
 import com.fishbreedingmanager.network.ModNetworking;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
@@ -60,7 +61,9 @@ public final class FishBreedingManager {
         ReloadResult result = WorldBreedingService.get().reload(event.getServer());
         if (!result.success()) {
             LOGGER.error("FBM 初始规则加载失败，未安装无效配置: {}", result.error());
+            return;
         }
+        EntityLifecycleHandler.restoreLoadedEntities(event.getServer());
     }
 
     @SubscribeEvent

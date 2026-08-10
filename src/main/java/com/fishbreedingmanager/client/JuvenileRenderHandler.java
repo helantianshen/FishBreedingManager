@@ -1,11 +1,15 @@
 package com.fishbreedingmanager.client;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
+
 import com.fishbreedingmanager.FishBreedingManager;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLivingEvent;
@@ -21,6 +25,14 @@ import net.neoforged.neoforge.client.event.RenderLivingEvent;
  */
 @EventBusSubscriber(value = Dist.CLIENT, modid = FishBreedingManager.MOD_ID)
 public final class JuvenileRenderHandler {
+    /**
+     * 当前渲染线程中各实体尚未由 Post 消费的真实压栈次数。
+     *
+     * <p>使用实体身份而非 UUID，允许嵌套渲染同一 UUID 的不同对象；计数支持同一实体发生递归渲染。
+     */
+    private static final ThreadLocal<Map<Entity, Integer>> PUSHED_ENTITIES =
+            ThreadLocal.withInitial(IdentityHashMap::new);
+
     private JuvenileRenderHandler() {
     }
 
@@ -29,7 +41,7 @@ public final class JuvenileRenderHandler {
      *
      * @param event NeoForge 生物渲染前事件
      */
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onRenderLivingPre(RenderLivingEvent.Pre<?, ?> event) {
         Entity entity = event.getEntity();
         long now = Minecraft.getInstance().level != null
@@ -43,6 +55,7 @@ public final class JuvenileRenderHandler {
             float inv = 1.0F - scale;
             pose.translate(0.0F, event.getEntity().getBbHeight() * 0.5F * inv, 0.0F);
             pose.scale(scale, scale, scale);
+            rememberPush(entity);
         }
     }
 
@@ -53,13 +66,44 @@ public final class JuvenileRenderHandler {
      */
     @SubscribeEvent
     public static void onRenderLivingPost(RenderLivingEvent.Post<?, ?> event) {
-        Entity entity = event.getEntity();
-        long now = Minecraft.getInstance().level != null
-                ? Minecraft.getInstance().level.getGameTime()
-                : 0L;
-        float scale = ClientJuvenileSync.scaleFor(entity.getUUID(), now);
-        if (scale != 1.0F) {
+        if (consumePush(event.getEntity())) {
             event.getPoseStack().popPose();
         }
+    }
+
+    /**
+     * 记录一次已经实际执行的矩阵压栈。
+     *
+     * @param entity 当前渲染实体
+     */
+    static void rememberPush(Entity entity) {
+        PUSHED_ENTITIES.get().merge(entity, 1, Integer::sum);
+    }
+
+    /**
+     * 消费一次实体压栈记录；没有记录时不得弹出外部渲染器的矩阵。
+     *
+     * @param entity 当前渲染实体
+     * @return 存在真实压栈记录并已消费时返回 {@code true}
+     */
+    static boolean consumePush(Entity entity) {
+        Map<Entity, Integer> pushed = PUSHED_ENTITIES.get();
+        Integer count = pushed.get(entity);
+        if (count == null) {
+            return false;
+        }
+        if (count == 1) {
+            pushed.remove(entity);
+        } else {
+            pushed.put(entity, count - 1);
+        }
+        return true;
+    }
+
+    /**
+     * 清理当前线程的渲染压栈记录，仅供客户端会话清理与单元测试使用。
+     */
+    static void clearTrackedPushes() {
+        PUSHED_ENTITIES.remove();
     }
 }

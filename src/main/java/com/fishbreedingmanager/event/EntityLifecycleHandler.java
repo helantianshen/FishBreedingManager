@@ -39,19 +39,7 @@ public final class EntityLifecycleHandler {
         if (!(event.getLevel() instanceof ServerLevel level)) {
             return;
         }
-
-        Entity entity = event.getEntity();
-        BreedingState state = entity.getData(ModAttachments.BREEDING_STATE);
-        if (!state.prepareForLevelJoin(level.getGameTime())) {
-            return;
-        }
-
-        BreedingRule rule = BreedingRuleManager.get(level.getServer()).find(entity.getType());
-        if (rule == null || !rule.enabled()) {
-            state.clearLove();
-            return;
-        }
-        ActiveLoveIndex.INSTANCE.add(level, entity.getUUID());
+        restoreEntity(level, event.getEntity(), BreedingRuleManager.get(level.getServer()));
     }
 
     /**
@@ -81,11 +69,64 @@ public final class EntityLifecycleHandler {
 
         Entity target = event.getTarget();
         long now = target.level().getGameTime();
-        BreedingState state = target.getData(ModAttachments.BREEDING_STATE);
+        BreedingState state = target.getExistingDataOrNull(ModAttachments.BREEDING_STATE);
+        if (state == null) {
+            return;
+        }
         state.tickTimers(now);
         if (state.isJuvenile(now)) {
             PacketDistributor.sendToPlayer(player,
                     JuvenileStatePayload.fromState(target.getUUID(), state));
         }
+    }
+
+    /**
+     * 在初始规则快照安装后，恢复启动阶段已经随出生区或强加载区进入世界的实体。
+     *
+     * <p>NeoForge 的 {@code ServerStartingEvent} 晚于部分实体 Join 事件，因此这些早期实体会被 Join 处理器暂时跳过。
+     * 本方法遍历当前已加载实体，但只读取已经存在的 FBM Attachment，不会给普通实体创建空状态。
+     *
+     * @param server 已完成初始规则加载的逻辑服务器
+     */
+    public static void restoreLoadedEntities(net.minecraft.server.MinecraftServer server) {
+        BreedingRuleManager manager = BreedingRuleManager.get(server);
+        if (!manager.isInitialized()) {
+            return;
+        }
+        for (ServerLevel level : server.getAllLevels()) {
+            for (Entity entity : level.getAllEntities()) {
+                restoreEntity(level, entity, manager);
+            }
+        }
+    }
+
+    /**
+     * 恢复单个实体已经存在的 FBM Love 状态。
+     *
+     * <p>管理器尚未初始化时完全不触碰实体，避免把启动暂态的空 Snapshot 误认为玩家配置；初始化后也使用
+     * {@link Entity#getExistingDataOrNull}，从而不会给无关实体创建并持久化五个默认字段。
+     *
+     * @param level 实体当前所在的服务端 Level
+     * @param entity 待恢复实体
+     * @param manager 当前服务器规则管理器
+     * @return 实体是否恢复到 {@link ActiveLoveIndex}
+     */
+    static boolean restoreEntity(ServerLevel level, Entity entity, BreedingRuleManager manager) {
+        if (!manager.isInitialized()) {
+            return false;
+        }
+
+        BreedingState state = entity.getExistingDataOrNull(ModAttachments.BREEDING_STATE);
+        if (state == null || !state.prepareForLevelJoin(level.getGameTime())) {
+            return false;
+        }
+
+        BreedingRule rule = manager.find(entity.getType());
+        if (rule == null || !rule.enabled()) {
+            state.clearLove();
+            return false;
+        }
+        ActiveLoveIndex.INSTANCE.add(level, entity.getUUID());
+        return true;
     }
 }

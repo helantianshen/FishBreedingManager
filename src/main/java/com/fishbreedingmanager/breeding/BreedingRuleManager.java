@@ -22,6 +22,7 @@ public final class BreedingRuleManager {
     private static final Map<MinecraftServer, BreedingRuleManager> MANAGERS = new ConcurrentHashMap<>();
 
     private volatile BreedingRuleSnapshot snapshot = BreedingRuleSnapshot.EMPTY;
+    private volatile boolean initialized;
 
     /**
      * 创建空快照管理器。
@@ -94,6 +95,18 @@ public final class BreedingRuleManager {
     }
 
     /**
+     * 判断管理器是否已经成功安装过世界规则快照。
+     *
+     * <p>该标记用于区分“服务端启动阶段尚未读取 SavedData”和“玩家合法配置了空规则集合”。实体 Join 事件在前一种
+     * 状态下必须保持持久化 Love 不变，等待启动加载完成后统一恢复。
+     *
+     * @return 至少成功安装过一次快照时返回 {@code true}
+     */
+    public boolean isInitialized() {
+        return initialized;
+    }
+
+    /**
      * 安装已经完整校验且不可变的运行时快照。
      *
      * <p>入口保持包级可见，强制生产调用方经由 {@link WorldBreedingService} 完成候选全集校验后再替换。
@@ -103,5 +116,6 @@ public final class BreedingRuleManager {
      */
     void install(BreedingRuleSnapshot next) {
         snapshot = next;
+        initialized = true;
     }
 }
