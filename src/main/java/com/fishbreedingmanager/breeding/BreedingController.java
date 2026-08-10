@@ -1,6 +1,7 @@
 package com.fishbreedingmanager.breeding;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import com.fishbreedingmanager.FishBreedingManager;
@@ -13,7 +14,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
@@ -46,6 +46,8 @@ public final class BreedingController {
     private static final double BREED_DISTANCE_SQR = 2.25D;
     /** 靠近配偶时的寻路速度倍率 */
     private static final double NAV_SPEED = 1.0D;
+    /** 只负责创建后代、不修改父母状态的生成器。 */
+    private static final ChildSpawner CHILD_SPAWNER = new ChildSpawner();
 
     private BreedingController() {
     }
@@ -102,8 +104,15 @@ public final class BreedingController {
     private static void handlePaired(ServerLevel level, Entity entity, BreedingState state,
                                      BreedingRule rule, long now) {
         Entity mate = level.getEntity(state.getMate());
-        if (mate == null || mate.isRemoved()) {
+        if (mate == null) {
             state.setMate(null);
+            return;
+        }
+        BreedingState mateState = mate.getData(ModAttachments.BREEDING_STATE);
+        state.tickTimers(now);
+        mateState.tickTimers(now);
+        if (!isValidPair(entity, state, mate, mateState, now)) {
+            clearPairReferences(entity, state, mate, mateState);
             return;
         }
         navigateToward(entity, mate);
@@ -127,7 +136,10 @@ public final class BreedingController {
             }
             BreedingState otherState = other.getData(ModAttachments.BREEDING_STATE);
             otherState.tickTimers(now);
-            if (!otherState.isInLove(now) || otherState.getMate() != null) {
+            if (!otherState.isInLove(now)
+                    || otherState.isOnCooldown(now)
+                    || otherState.isJuvenile(now)
+                    || otherState.getMate() != null) {
                 continue;
             }
             if (entity.distanceToSqr(other) > SEARCH_RADIUS_SQR) {
@@ -142,34 +154,32 @@ public final class BreedingController {
         }
     }
 
-    /** 两亲本产生后代, 应用冷却并清除 love 需求§5/§35 */
+    /**
+     * 尝试生成后代，并且只在后代真正加入世界后提交父母状态。
+     *
+     * @param level 两亲本所在的服务端 Level
+     * @param a 第一亲本
+     * @param b 第二亲本
+     * @param rule 当前生效规则
+     * @param now 当前绝对游戏刻
+     */
     private static void breed(ServerLevel level, Entity a, Entity b, BreedingRule rule,
                               long now) {
         BreedingState sa = a.getData(ModAttachments.BREEDING_STATE);
         BreedingState sb = b.getData(ModAttachments.BREEDING_STATE);
 
-        // 在中点生成同类型后代 不杂交 需求§5 
-        EntityType<?> type = a.getType();
-        Entity child = type.create(level);
-        if (child != null) {
-            Vec3 mid = a.position().add(b.position()).scale(0.5D);
-            child.moveTo(mid.x, mid.y, mid.z, 0.0F, 0.0F);
-            BreedingState childState = child.getData(ModAttachments.BREEDING_STATE);
-            childState.markJuvenile(now, rule.growthTimeTicks());
-            if (level.addFreshEntity(child)) {
-                // 后代出生爱心粒子 
-                level.broadcastEntityEvent(child, (byte) 18);
-                // 通知 tracking 客户端这是幼体 客户端 attachment 不自动同步 
-                PacketDistributor.sendToPlayersTrackingEntity(child,
-                        JuvenileStatePayload.fromState(child.getUUID(), childState));
-            }
+        ChildSpawnResult result = CHILD_SPAWNER.spawn(level, a, b, rule, now);
+        if (!applySpawnResult(result, sa, sb, rule, now)) {
+            FishBreedingManager.LOGGER.warn("FBM 后代生成失败，保留父母 Love 以便重试: entity={}, status={}",
+                    BuiltInRegistries.ENTITY_TYPE.getKey(a.getType()), result.status());
+            return;
         }
 
-        // 父母冷却 + 清除 love 
-        sa.startCooldown(now, rule.breedingCooldownTicks());
-        sb.startCooldown(now, rule.breedingCooldownTicks());
-        sa.clearLove();
-        sb.clearLove();
+        Entity child = Objects.requireNonNull(result.child());
+        BreedingState childState = child.getData(ModAttachments.BREEDING_STATE);
+        level.broadcastEntityEvent(child, (byte) 18);
+        PacketDistributor.sendToPlayersTrackingEntity(child,
+                JuvenileStatePayload.fromState(child.getUUID(), childState));
         level.broadcastEntityEvent(a, (byte) 18);
         level.broadcastEntityEvent(b, (byte) 18);
 
@@ -178,6 +188,77 @@ public final class BreedingController {
 
         FishBreedingManager.LOGGER.debug("FBM: {} bred, child spawned",
                 BuiltInRegistries.ENTITY_TYPE.getKey(a.getType()));
+    }
+
+    /**
+     * 根据后代生成结果提交或回滚父母的临时配对状态。
+     *
+     * <p>失败时只清除配偶 UUID，保留 Love 与空闲冷却以便在剩余时间窗内重试；成功时才启动双方冷却并清除 Love。
+     * 方法不依赖 Minecraft 实体，保持包级可见以便直接验证状态策略。
+     *
+     * @param result 后代生成结果
+     * @param first 第一亲本状态
+     * @param second 第二亲本状态
+     * @param rule 当前生效规则
+     * @param now 当前绝对游戏刻
+     * @return 是否已经提交成功繁殖状态
+     */
+    static boolean applySpawnResult(ChildSpawnResult result, BreedingState first,
+                                    BreedingState second, BreedingRule rule, long now) {
+        if (!result.successful()) {
+            first.setMate(null);
+            second.setMate(null);
+            return false;
+        }
+        first.startCooldown(now, rule.breedingCooldownTicks());
+        second.startCooldown(now, rule.breedingCooldownTicks());
+        first.clearLove();
+        second.clearLove();
+        return true;
+    }
+
+    /**
+     * 验证当前配对仍满足同类型、双方有效 Love、无冷却、非幼体且 UUID 互相指向。
+     *
+     * @param first 第一亲本实体
+     * @param firstState 第一亲本状态
+     * @param second 第二亲本实体
+     * @param secondState 第二亲本状态
+     * @param now 当前绝对游戏刻
+     * @return 仅在双方仍可继续本次配对时返回 {@code true}
+     */
+    static boolean isValidPair(Entity first, BreedingState firstState,
+                               Entity second, BreedingState secondState, long now) {
+        return first != second
+                && !first.isRemoved()
+                && !second.isRemoved()
+                && first.getType() == second.getType()
+                && firstState.isInLove(now)
+                && secondState.isInLove(now)
+                && !firstState.isOnCooldown(now)
+                && !secondState.isOnCooldown(now)
+                && !firstState.isJuvenile(now)
+                && !secondState.isJuvenile(now)
+                && second.getUUID().equals(firstState.getMate())
+                && first.getUUID().equals(secondState.getMate());
+    }
+
+    /**
+     * 只清除仍然互相指向当前双方的配偶引用，避免覆盖已经重新建立的新配对。
+     *
+     * @param first 第一实体
+     * @param firstState 第一实体状态
+     * @param second 第二实体
+     * @param secondState 第二实体状态
+     */
+    private static void clearPairReferences(Entity first, BreedingState firstState,
+                                            Entity second, BreedingState secondState) {
+        if (second.getUUID().equals(firstState.getMate())) {
+            firstState.setMate(null);
+        }
+        if (first.getUUID().equals(secondState.getMate())) {
+            secondState.setMate(null);
+        }
     }
 
     /** 若 {@code self} 有寻路则向 {@code target} 移动, 非 Mob 实体无法寻路 */
