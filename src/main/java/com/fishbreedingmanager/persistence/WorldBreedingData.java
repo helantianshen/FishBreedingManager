@@ -11,6 +11,7 @@ import java.util.Set;
 import com.fishbreedingmanager.breeding.BreedingRule;
 import com.fishbreedingmanager.breeding.BreedingRuleSnapshot;
 import com.fishbreedingmanager.breeding.DefaultRules;
+import com.fishbreedingmanager.breeding.RuleValidator;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -78,6 +79,22 @@ public final class WorldBreedingData extends SavedData {
 
     public void removeRule(ResourceLocation id) {
         rules.remove(id);
+        setDirty();
+    }
+
+    /**
+     * 用已经完整校验的规则集合整体替换持久化数据。
+     *
+     * <p>该入口由事务式世界服务在候选全集通过 {@link RuleValidator} 后调用。整体替换可确保删除操作与更新操作
+     * 使用相同的提交路径，并统一标记 {@link SavedData} 为待保存状态。
+     *
+     * @param replacement 通过完整校验的候选规则集合
+     */
+    public void replaceRules(Collection<BreedingRule> replacement) {
+        rules.clear();
+        for (BreedingRule rule : replacement) {
+            rules.put(rule.entityTypeId(), rule);
+        }
         setDirty();
     }
 

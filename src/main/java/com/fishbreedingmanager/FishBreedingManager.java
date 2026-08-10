@@ -2,10 +2,11 @@ package com.fishbreedingmanager;
 
 import com.fishbreedingmanager.attachment.ModAttachments;
 import com.fishbreedingmanager.breeding.BreedingRuleManager;
+import com.fishbreedingmanager.breeding.ReloadResult;
+import com.fishbreedingmanager.breeding.WorldBreedingService;
 import com.fishbreedingmanager.command.FBMCommands;
 import com.fishbreedingmanager.network.ModNetworking;
 import com.mojang.logging.LogUtils;
-import net.minecraft.server.MinecraftServer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -53,10 +54,11 @@ public final class FishBreedingManager {
 
     @SubscribeEvent
     private void onServerStarting(ServerStartingEvent event) {
-        // Build the initial runtime snapshot from the world's saved data (seeds defaults on a fresh
-        // world via WorldBreedingData#create). Existing entities adopt the rules immediately.
-        MinecraftServer server = event.getServer();
-        BreedingRuleManager.get(server).reload(server);
+        // 首次加载也走统一校验服务；新存档会在 WorldBreedingData 创建时种入四种默认鱼规则。
+        ReloadResult result = WorldBreedingService.get().reload(event.getServer());
+        if (!result.success()) {
+            LOGGER.error("FBM 初始规则加载失败，未安装无效配置: {}", result.error());
+        }
     }
 
     @SubscribeEvent

@@ -3,9 +3,6 @@ package com.fishbreedingmanager.breeding;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.fishbreedingmanager.FishBreedingManager;
-import com.fishbreedingmanager.persistence.WorldBreedingData;
-
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -26,7 +23,12 @@ public final class BreedingRuleManager {
 
     private volatile BreedingRuleSnapshot snapshot = BreedingRuleSnapshot.EMPTY;
 
-    private BreedingRuleManager() {
+    /**
+     * 创建空快照管理器。
+     *
+     * <p>构造器保持包级可见，生产代码通过 {@link #get(MinecraftServer)} 获取实例，同包测试可创建隔离管理器。
+     */
+    BreedingRuleManager() {
     }
 
     /** 返回 给定服务器 的规则管理器, 不存在则创建 */
@@ -57,20 +59,14 @@ public final class BreedingRuleManager {
     }
 
     /**
-     * 重读世界 {@link WorldBreedingData}, 构建新不可变快照并原子替换 
-     * 失败时保留旧快照 
+     * 安装已经完整校验且不可变的运行时快照。
+     *
+     * <p>入口保持包级可见，强制生产调用方经由 {@link WorldBreedingService} 完成候选全集校验后再替换。
+     * {@code volatile} 写入使后续行为线程立即看见完整的新快照。
+     *
+     * @param next 下一份权威运行时快照
      */
-    public ReloadResult reload(MinecraftServer server) {
-        try {
-            WorldBreedingData data = WorldBreedingData.get(server);
-            BreedingRuleSnapshot next = data.buildSnapshot();
-            this.snapshot = next; // 原子替换 
-            FishBreedingManager.LOGGER.info("FBM reloaded: {} rule(s), {} imported entit(ies)",
-                    next.rules().size(), next.importedEntities().size());
-            return ReloadResult.success(next.rules().size());
-        } catch (Exception e) {
-            FishBreedingManager.LOGGER.error("FBM reload failed; keeping previous snapshot", e);
-            return ReloadResult.failure(e.getMessage());
-        }
+    void install(BreedingRuleSnapshot next) {
+        snapshot = next;
     }
 }

@@ -1,7 +1,7 @@
 package com.fishbreedingmanager.command;
 
-import com.fishbreedingmanager.breeding.BreedingRuleManager;
 import com.fishbreedingmanager.breeding.ReloadResult;
+import com.fishbreedingmanager.breeding.WorldBreedingService;
 import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -15,8 +15,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  * <p>当前子命令, 
  * <ul>
  *   <li>{@code /fbm reload}, 重读当前世界 {@code WorldBreedingData}, 重新校验并原子替换运行时 
- *       {@code BreedingRuleSnapshot}, 需权限等级 2 (OP) 
- *       单机始终允许编辑, 专用服务端仅 OP 可执行 </li>
+ *       {@code BreedingRuleSnapshot}，严格要求权限等级 2。单人世界未启用作弊时同样无权执行。</li>
  * </ul>
  */
 public final class FBMCommands {
@@ -33,7 +32,7 @@ public final class FBMCommands {
 
     private static int doReload(CommandSourceStack source) {
         MinecraftServer server = source.getServer();
-        ReloadResult result = BreedingRuleManager.get(server).reload(server);
+        ReloadResult result = WorldBreedingService.get().reload(server);
         if (result.success()) {
             source.sendSuccess(() -> Component.translatable("commands.fbm.reload.success", result.ruleCount()), true);
             return 1;
