@@ -2,7 +2,7 @@
 
 > 用途：本项目当前实现、架构决策与后续边界的通览总结，供开发接力和上下文恢复使用。
 > 目标：Minecraft 1.21.1 / NeoForge 21.1.x / Java 21 的鱼类繁殖管理模组。
-> 最近更新：2026-08-11，P0 B-lite 自动化实现完成，交互式客户端验收待执行。
+> 最近更新：2026-08-12，P0 B-lite 自动化与交互式客户端验收全部通过。
 >
 > 配套需求文档：[`Fish_Breeding_Manager_Requirements.md`](./Fish_Breeding_Manager_Requirements.md)
 
@@ -24,9 +24,9 @@
   热更新、实体加载恢复、客户端追踪补发和严格管理员命令。
 - 配置存于主世界 SavedData，同一存档的所有维度共享一套规则；不同存档互相隔离。
 - 所有管理命令在 `/fbm` 根节点严格要求权限等级 2；单人世界未开启作弊时同样不能执行。
-- 已建立 NeoForge JUnit 环境，共 36 个测试；`test`、`build`、`javadoc` 均通过。
-- 交互式 cod 客户端验收尚未人工执行，真实结果记录在
-  [`testing/P0_Cod_Acceptance.md`](./testing/P0_Cod_Acceptance.md)，当前不得宣称 PASS。
+- 已建立 NeoForge JUnit 环境，共 38 个测试；`test`、`build`、`javadoc` 均通过。
+- 交互式 cod 客户端 11 项验收全部通过，真实结果记录在
+  [`testing/P0_Cod_Acceptance.md`](./testing/P0_Cod_Acceptance.md)。
 - 第三方鱼兼容验收、Variant/Adapter、管理 GUI 和实体预览仍未实现。
 
 ### 1.2 当前核心文件结构
@@ -386,13 +386,16 @@ fishbreedingmanager/
 
 ## 5. 开发阶段与验收（需求 §49-§54）
 
-### 5.1 P0 B-lite — 自动化实现完成，交互验收待执行
+### 5.1 P0 B-lite — 自动化与交互验收全部通过
 
 已完成：WorldBreedingData → Runtime Snapshot → 事务校验与原子替换 → BreedingState Attachment → 喂食 → Love →
 配偶搜索 → 寻路 → 生成后代 → 幼体 → 冷却 → 生命周期恢复 → `/fbm rule` 管理命令。
 
-自动化层已有 36 个 JUnit 测试并通过完整构建；实际客户端中的爱心、寻路、模型尺寸和权限可见性仍必须按
-[`testing/P0_Cod_Acceptance.md`](./testing/P0_Cod_Acceptance.md) 人工观察，因此当前 P0 不能标为最终验收 PASS。
+自动化层已有 38 个 JUnit 测试并通过完整构建；实际客户端中的爱心、寻路、模型尺寸、冷却、热更新、区块重载和
+权限可见性均已按 [`testing/P0_Cod_Acceptance.md`](./testing/P0_Cod_Acceptance.md) 完成人工观察，P0 最终验收为 PASS。
+
+验收确认的运行边界：配偶搜索半径固定为 8 格，9 格外不会建立配对；区块恢复只适用于仍存在的实体，未命名鳕鱼被
+原版自然消失机制删除后无法恢复，因此持久化测试需要命名目标实体或确保只发生卸载。
 
 **第一阶段 PoC 验收（需求 §52，必须全打通）**：用 `minecraft:cod`，规则 `kelp / cooldown=600t / growth=1200t`：
 1. 原版 cod 默认不可繁殖；2. 装 FBM 后加载 cod 规则；
@@ -457,10 +460,9 @@ fishbreedingmanager/
 
 ## 8. 下一步行动建议
 
-1. 启动开发客户端，按 `docs/testing/P0_Cod_Acceptance.md` 完成 cod、权限和 Love 跨区块加载的真实观察。
-2. 对任何 FAIL 附日志行号并先修复 P0，不得把未观察行为写成 PASS。
-3. 选择一个原本不可繁殖的第三方鱼执行兼容验收，确认默认后代和无通用导航时的降级行为。
-4. 在当前事务服务和严格权限边界上继续实现 Entity Browser 与 Rule Editor GUI。
-5. GUI 稳定后再设计 Variant 继承和 BreedingAdapter API，避免提前绑定第三方私有实现。
+1. 选择一个原本不可繁殖的第三方鱼执行兼容验收，确认默认后代和无通用导航时的降级行为。
+2. 实现第三方实体发现、高级 Registry 搜索、手动导入与按存档持久化。
+3. 在当前事务服务和严格权限边界上继续实现 Entity Browser 与 Rule Editor GUI。
+4. GUI 稳定后再设计 Variant 继承和 BreedingAdapter API，避免提前绑定第三方私有实现。
 
 > 开发原则重申（需求 §58）：优先查 1.21.1 官方文档/API → 不确定查 NeoForged 源码 → 不套用旧 Forge 教程 → 不提前 ASM → 不过度抽象 → 先证明 cod PoC → 每阶段保证热重载不破坏。
