@@ -137,7 +137,7 @@ public final class FBMCommands {
                 .orElse(null);
         if (rule == null) {
             source.sendFailure(Component.translatable(
-                    "commands.fbm.rule.not_found", entityId));
+                    "commands.fbm.rule.not_found", entityId.toString()));
             return 0;
         }
         source.sendSuccess(() -> Component.literal(formatRule(rule)), false);
@@ -217,7 +217,7 @@ public final class FBMCommands {
             return 0;
         }
         source.sendSuccess(() -> Component.translatable(
-                successKey, entityId, result.ruleCount()), true);
+                successKey, entityId.toString(), result.ruleCount()), true);
         return Command.SINGLE_SUCCESS;
     }
 

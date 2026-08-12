@@ -2,7 +2,7 @@
 
 ## 环境
 
-- 执行日期：2026-08-11
+- 执行日期：2026-08-12
 - Minecraft：1.21.1
 - NeoForge：21.1.244
 - Java：21
@@ -15,7 +15,7 @@
 
 | 检查 | 状态 | 结果 |
 |---|---|---|
-| `./gradlew test` | PASS | 36 个 JUnit 测试通过 |
+| `./gradlew test` | PASS | 37 个 JUnit 测试通过 |
 | `./gradlew build` | PASS | Mod JAR 构建成功 |
 | `./gradlew javadoc` | PASS | 中文 Javadoc 与链接语法生成成功，无警告 |
 | `./gradlew runClient` 启动检查 | PASS | 客户端完成资源加载后正常退出；`latest.log` 无 FBM ERROR/Exception |
@@ -29,7 +29,7 @@
 
 | 序号 | 操作 | 预期结果 | 状态 | 实际观察/日志 |
 |---:|---|---|---|---|
-| 1 | 在允许作弊的测试世界执行 `/fbm rule set minecraft:cod 600 1200 minecraft:kelp` | 命令成功，鳕鱼规则立即生效 | PENDING | 未观察 |
+| 1 | 在允许作弊的测试世界执行 `/fbm rule set minecraft:cod 600 1200 minecraft:kelp` | 命令成功，鳕鱼规则立即生效 | RETEST | 首次执行时规则已提交，但成功消息误传 `ResourceLocation`，客户端显示参数类型异常；已修复并增加回归测试，等待重启客户端复测 |
 | 2 | 在水体中执行两次 `/summon minecraft:cod` | 两条鳕鱼正常生成 | PENDING | 未观察 |
 | 3 | 分别手持海带右键两条鳕鱼 | 每条鱼消费一个海带并出现爱心 | PENDING | 未观察 |
 | 4 | 等待繁殖 | 两条鱼主动靠近并生成第三条同类型鳕鱼 | PENDING | 未观察 |
