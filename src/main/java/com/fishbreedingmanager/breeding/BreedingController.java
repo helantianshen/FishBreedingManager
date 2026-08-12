@@ -195,11 +195,11 @@ public final class BreedingController {
 
         Entity child = Objects.requireNonNull(result.child());
         BreedingState childState = child.getData(ModAttachments.BREEDING_STATE);
-        level.broadcastEntityEvent(child, (byte) 18);
+        LoveParticleEmitter.emit(level, child);
         PacketDistributor.sendToPlayersTrackingEntity(child,
                 JuvenileStatePayload.fromState(child.getUUID(), childState));
-        level.broadcastEntityEvent(a, (byte) 18);
-        level.broadcastEntityEvent(b, (byte) 18);
+        LoveParticleEmitter.emit(level, a);
+        LoveParticleEmitter.emit(level, b);
 
         ActiveLoveIndex.INSTANCE.remove(level, a.getUUID());
         ActiveLoveIndex.INSTANCE.remove(level, b.getUUID());

@@ -6,6 +6,7 @@ import com.fishbreedingmanager.breeding.ActiveLoveIndex;
 import com.fishbreedingmanager.breeding.BreedingRule;
 import com.fishbreedingmanager.breeding.BreedingRuleManager;
 import com.fishbreedingmanager.breeding.BreedingState;
+import com.fishbreedingmanager.breeding.LoveParticleEmitter;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
@@ -81,8 +82,8 @@ public final class EntityInteractionHandler {
             held.shrink(1);
         }
 
-        // 爱心粒子, 原版机制 同 Animal#setInLove 
-        target.level().broadcastEntityEvent(target, (byte) 18);
+        // 服务端直接发送粒子，兼容鳕鱼等不处理 Animal 实体事件 18 的目标。
+        LoveParticleEmitter.emit((ServerLevel) target.level(), target);
 
         // 消费交互, 使原版/其他 handler 不再执行 
         event.setCancellationResult(InteractionResult.SUCCESS);
