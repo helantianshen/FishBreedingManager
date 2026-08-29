@@ -1,4 +1,4 @@
-package com.fishbreedingmanager.breeding;
+package com.fishbreedingmanager.breeding.spawn;
 
 /**
  * 一次后代生成尝试的明确终止状态。

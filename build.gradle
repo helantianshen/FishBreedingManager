@@ -133,6 +133,34 @@ configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
+// Optional third-party mods for local compatibility runs. The directory is supplied by the
+// developer and is never part of the published dependency graph or committed configuration.
+def compatModsDirProperty = providers.gradleProperty('fbmCompatModsDir').orNull
+def compatModsInclude = providers.gradleProperty('fbmCompatModsInclude').getOrElse('*.jar')
+def compatRuntimeJars = []
+
+if (compatModsDirProperty != null && !compatModsDirProperty.isBlank()) {
+    def compatModsDir = file(compatModsDirProperty)
+    if (!compatModsDir.isDirectory()) {
+        logger.lifecycle("FBM compatibility runtime directory does not exist; continuing without local mods: ${compatModsDir}")
+    } else {
+        compatRuntimeJars = fileTree(compatModsDir) {
+            include compatModsInclude
+        }.files.findAll {
+            it.isFile() && it.name.toLowerCase(java.util.Locale.ROOT).endsWith('.jar')
+        }.sort { left, right ->
+            compatModsDir.toPath().relativize(left.toPath()).toString()
+                    <=> compatModsDir.toPath().relativize(right.toPath()).toString()
+        }
+
+        if (compatRuntimeJars.isEmpty()) {
+            logger.lifecycle("FBM compatibility runtime found no files matching '${compatModsInclude}' in ${compatModsDir}; continuing without local mods")
+        } else {
+            logger.lifecycle("FBM compatibility runtime loading ${compatRuntimeJars.size()} local mod(s): ${compatRuntimeJars*.name.join(', ')}")
+        }
+    }
+}
+
 dependencies {
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
@@ -155,6 +183,10 @@ dependencies {
     // For more info:
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
+
+    if (!compatRuntimeJars.isEmpty()) {
+        localRuntime files(compatRuntimeJars)
+    }
 
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'

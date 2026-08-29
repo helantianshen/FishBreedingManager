@@ -1,4 +1,4 @@
-package com.fishbreedingmanager.breeding;
+package com.fishbreedingmanager.breeding.spawn;
 
 import java.util.Objects;
 

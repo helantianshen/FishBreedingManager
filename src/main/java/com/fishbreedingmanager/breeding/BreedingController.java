@@ -1,5 +1,9 @@
 package com.fishbreedingmanager.breeding;
 
+import com.fishbreedingmanager.breeding.feed.LoveParticleEmitter;
+import com.fishbreedingmanager.breeding.spawn.ChildSpawnResult;
+import com.fishbreedingmanager.breeding.spawn.ChildSpawner;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;

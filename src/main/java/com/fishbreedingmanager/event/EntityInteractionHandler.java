@@ -2,14 +2,11 @@ package com.fishbreedingmanager.event;
 
 import com.fishbreedingmanager.FishBreedingManager;
 import com.fishbreedingmanager.attachment.ModAttachments;
-import com.fishbreedingmanager.breeding.ActiveLoveIndex;
-import com.fishbreedingmanager.breeding.BreedingRule;
+import com.fishbreedingmanager.breeding.feed.BreedingFeedService;
 import com.fishbreedingmanager.breeding.BreedingRuleManager;
 import com.fishbreedingmanager.breeding.BreedingState;
-import com.fishbreedingmanager.breeding.LoveParticleEmitter;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -23,14 +20,10 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 /**
  * 服务端喂食交互处理器：玩家用当前规则食物右键实体时，使其进入 FBM Love。
  *
- * <p>规则从当前运行时快照动态查询，实体自身的 {@link BreedingState} 持有 Love 绝对截止时间。
- * 进入 Love 后注册到 {@link ActiveLoveIndex}，使控制器无需每 tick 扫描全世界实体即可寻找配偶。
+ * <p>规则与状态转换委托给 {@link BreedingFeedService}，本类只负责玩家物品和交互事件语义。
  */
 @EventBusSubscriber(modid = FishBreedingManager.MOD_ID)
 public final class EntityInteractionHandler {
-    /** 喂食后固定 600 游戏刻（约 30 秒）的 Love 时间窗。 */
-    public static final long LOVE_DURATION_TICKS = 600L;
-
     private EntityInteractionHandler() {
     }
 
@@ -52,46 +45,45 @@ public final class EntityInteractionHandler {
         InteractionHand hand = event.getHand();
         ItemStack held = event.getItemStack();
 
-        MinecraftServer server = player.getServer();
-        if (server == null) {
+        if (player.getServer() == null || !(target.level() instanceof ServerLevel level)) {
             return;
         }
 
-        // 对当前快照动态查规则, 热重载感知 
-        BreedingRule rule = BreedingRuleManager.get(server).find(target.getType());
-        if (rule == null || !rule.enabled()) {
-            return;
-        }
-        if (!rule.testFood(held)) {
+        BreedingFeedService.FeedResult result = BreedingFeedService.get().tryFeed(
+                level, target, held, BreedingRuleManager.get(player.getServer()));
+        if (!applyFeedResult(event, player, held, result)) {
             return;
         }
 
-        long now = target.level().getGameTime();
         BreedingState state = target.getData(ModAttachments.BREEDING_STATE);
-        state.tickTimers(now);
-        if (!state.canEnterLove(now)) {
-            return;
-        }
-
-        // 进入 love 
-        state.enterLove(now, LOVE_DURATION_TICKS);
-        ActiveLoveIndex.INSTANCE.add((ServerLevel) target.level(), target.getUUID());
-
-        // 消耗一个物品, 创造模式玩家豁免 
-        if (!player.getAbilities().instabuild) {
-            held.shrink(1);
-        }
-
-        // 服务端直接发送粒子，兼容鳕鱼等不处理 Animal 实体事件 18 的目标。
-        LoveParticleEmitter.emit((ServerLevel) target.level(), target);
-
-        // 消费交互, 使原版/其他 handler 不再执行 
-        event.setCancellationResult(InteractionResult.SUCCESS);
-        event.setCanceled(true);
-
         FishBreedingManager.LOGGER.debug("FBM: {} fed {} (love until {})",
                 player.getName().getString(),
                 BuiltInRegistries.ENTITY_TYPE.getKey(target.getType()),
                 state.getLoveUntil());
+    }
+
+    /**
+     * 把统一喂食结果映射为玩家物品与 NeoForge 事件语义。
+     *
+     * <p>只有 {@link BreedingFeedService.FeedResult#FED} 会消费交互；普通玩家缩减一个物品，创造模式玩家保留物品。
+     * 所有拒绝结果保持事件不变，使原版或其他 Mod 能继续处理。
+     *
+     * @param event 当前玩家实体交互事件
+     * @param player 发起交互的玩家
+     * @param held 当前手持物
+     * @param result 统一喂食服务结果
+     * @return 本入口实际消费交互时返回 {@code true}
+     */
+    static boolean applyFeedResult(PlayerInteractEvent.EntityInteract event, Player player,
+                                   ItemStack held, BreedingFeedService.FeedResult result) {
+        if (result != BreedingFeedService.FeedResult.FED) {
+            return false;
+        }
+        if (!player.getAbilities().instabuild) {
+            held.shrink(1);
+        }
+        event.setCancellationResult(InteractionResult.SUCCESS);
+        event.setCanceled(true);
+        return true;
     }
 }

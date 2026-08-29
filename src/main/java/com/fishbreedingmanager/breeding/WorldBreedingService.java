@@ -4,8 +4,10 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import com.fishbreedingmanager.FishBreedingManager;
+import com.fishbreedingmanager.compat.CompatibilityCoordinator;
 import com.fishbreedingmanager.persistence.WorldBreedingData;
 
 import net.minecraft.resources.ResourceLocation;
@@ -20,9 +22,12 @@ import net.minecraft.server.MinecraftServer;
  */
 public final class WorldBreedingService {
     private static final WorldBreedingService INSTANCE =
-            new WorldBreedingService(new RuleValidator());
+            new WorldBreedingService(
+                    new RuleValidator(),
+                    CompatibilityCoordinator.get()::refreshLoadedEntities);
 
     private final RuleValidator validator;
+    private final Consumer<MinecraftServer> compatibilityRefresher;
 
     /**
      * 创建服务并注入规则校验器。
@@ -30,7 +35,19 @@ public final class WorldBreedingService {
      * @param validator 提交前使用的完整规则校验器
      */
     WorldBreedingService(RuleValidator validator) {
+        this(validator, ignored -> { });
+    }
+
+    /**
+     * 创建服务并注入校验器与规则发布后的可选兼容刷新边界。
+     *
+     * @param validator 提交前使用的完整规则校验器
+     * @param compatibilityRefresher 成功发布 Snapshot 后执行的 best-effort 兼容刷新
+     */
+    WorldBreedingService(RuleValidator validator,
+                         Consumer<MinecraftServer> compatibilityRefresher) {
         this.validator = validator;
+        this.compatibilityRefresher = compatibilityRefresher;
     }
 
     /**
@@ -60,6 +77,7 @@ public final class WorldBreedingService {
             }
             BreedingRuleSnapshot next = data.buildSnapshot();
             manager.install(next);
+            refreshCompatibility(server);
             return ReloadResult.success(next.rules().size());
         } catch (RuntimeException exception) {
             FishBreedingManager.LOGGER.error("FBM 规则重载失败，保留旧运行时快照", exception);
@@ -78,7 +96,12 @@ public final class WorldBreedingService {
      * @return 事务提交结果
      */
     public RuleUpdateResult upsert(MinecraftServer server, BreedingRule rule) {
-        return upsert(WorldBreedingData.get(server), BreedingRuleManager.get(server), rule);
+        RuleUpdateResult result = upsert(
+                WorldBreedingData.get(server), BreedingRuleManager.get(server), rule);
+        if (result.success()) {
+            refreshCompatibility(server);
+        }
+        return result;
     }
 
     /**
@@ -134,7 +157,12 @@ public final class WorldBreedingService {
      */
     public RuleUpdateResult setEnabled(MinecraftServer server, ResourceLocation entityId,
                                        boolean enabled) {
-        return setEnabled(WorldBreedingData.get(server), BreedingRuleManager.get(server), entityId, enabled);
+        RuleUpdateResult result = setEnabled(
+                WorldBreedingData.get(server), BreedingRuleManager.get(server), entityId, enabled);
+        if (result.success() && enabled) {
+            refreshCompatibility(server);
+        }
+        return result;
     }
 
     /**
@@ -209,5 +237,23 @@ public final class WorldBreedingService {
             result.put(rule.entityTypeId(), rule);
         }
         return result;
+    }
+
+    /**
+     * 隔离规则提交后的可选兼容刷新。
+     *
+     * <p>规则数据和运行时 Snapshot 在调用前已经成功提交，因此任何第三方实体或 Goal 异常只能记录，不能让命令
+     * 返回失败或让启动流程误称旧快照仍被保留。
+     *
+     * @param server 已成功发布规则的当前服务器
+     */
+    void refreshCompatibility(MinecraftServer server) {
+        try {
+            compatibilityRefresher.accept(server);
+        } catch (RuntimeException exception) {
+            FishBreedingManager.LOGGER.error(
+                    "FBM optional compatibility refresh failed after rule publication; rules remain committed",
+                    exception);
+        }
     }
 }

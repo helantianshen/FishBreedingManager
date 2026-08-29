@@ -1,5 +1,8 @@
 package com.fishbreedingmanager.breeding;
 
+import com.fishbreedingmanager.breeding.spawn.ChildSpawnResult;
+import com.fishbreedingmanager.breeding.spawn.ChildSpawnStatus;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;

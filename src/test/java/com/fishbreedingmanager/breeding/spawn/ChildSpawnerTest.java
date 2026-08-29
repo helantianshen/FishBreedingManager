@@ -1,4 +1,4 @@
-package com.fishbreedingmanager.breeding;
+package com.fishbreedingmanager.breeding.spawn;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -15,6 +15,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import com.fishbreedingmanager.attachment.ModAttachments;
+import com.fishbreedingmanager.breeding.BreedingRule;
+import com.fishbreedingmanager.breeding.BreedingState;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;

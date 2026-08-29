@@ -1,6 +1,8 @@
-package com.fishbreedingmanager.breeding;
+package com.fishbreedingmanager.breeding.spawn;
 
 import com.fishbreedingmanager.attachment.ModAttachments;
+import com.fishbreedingmanager.breeding.BreedingRule;
+import com.fishbreedingmanager.breeding.BreedingState;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;

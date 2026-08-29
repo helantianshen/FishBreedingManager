@@ -1,4 +1,4 @@
-package com.fishbreedingmanager.breeding;
+package com.fishbreedingmanager.breeding.feed;
 
 import static org.mockito.ArgumentMatchers.doubleThat;
 import static org.mockito.ArgumentMatchers.eq;

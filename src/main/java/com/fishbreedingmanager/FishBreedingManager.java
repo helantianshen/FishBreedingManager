@@ -1,25 +1,18 @@
 package com.fishbreedingmanager;
 
 import com.fishbreedingmanager.attachment.ModAttachments;
-import com.fishbreedingmanager.breeding.ActiveLoveIndex;
-import com.fishbreedingmanager.breeding.BreedingRuleManager;
-import com.fishbreedingmanager.breeding.ReloadResult;
-import com.fishbreedingmanager.breeding.WorldBreedingService;
 import com.fishbreedingmanager.command.FBMCommands;
-import com.fishbreedingmanager.event.EntityLifecycleHandler;
 import com.fishbreedingmanager.network.ModNetworking;
+import com.fishbreedingmanager.server.ServerLifecycleHandler;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.server.ServerStartingEvent;
-import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import org.slf4j.Logger;
 
 /**
- * Fish Breeding Manager（FBM）的通用逻辑入口与服务器生命周期协调器。
+ * Fish Breeding Manager（FBM）的通用逻辑入口与组成根。
  *
  * <p>FBM 为 Minecraft 1.21.1 NeoForge 提供按存档保存、可热更新的实体繁殖规则。服务端是规则、繁殖结果与实体状态
  * 的唯一权威；原版或第三方鱼类无需修改自身 Java 类即可通过事件、SavedData 和 Attachment 参与繁殖。
@@ -51,25 +44,7 @@ public final class FishBreedingManager {
         modEventBus.addListener(ModNetworking::register);
 
         // 命令与服务器生命周期属于 NeoForge 游戏总线。
-        NeoForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.register(new ServerLifecycleHandler());
         NeoForge.EVENT_BUS.addListener(FBMCommands::register);
-    }
-
-    @SubscribeEvent
-    private void onServerStarting(ServerStartingEvent event) {
-        // 首次加载也走统一校验服务；新存档会在 WorldBreedingData 创建时种入四种默认鱼规则。
-        ReloadResult result = WorldBreedingService.get().reload(event.getServer());
-        if (!result.success()) {
-            LOGGER.error("FBM 初始规则加载失败，未安装无效配置: {}", result.error());
-            return;
-        }
-        EntityLifecycleHandler.restoreLoadedEntities(event.getServer());
-    }
-
-    @SubscribeEvent
-    private void onServerStopping(ServerStoppingEvent event) {
-        // 清理只属于当前服务器会话的内存状态，防止下一个存档复用旧 UUID 或快照。
-        ActiveLoveIndex.INSTANCE.clearAll();
-        BreedingRuleManager.remove(event.getServer());
     }
 }

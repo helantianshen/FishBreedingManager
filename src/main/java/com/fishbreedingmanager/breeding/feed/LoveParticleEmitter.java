@@ -1,4 +1,4 @@
-package com.fishbreedingmanager.breeding;
+package com.fishbreedingmanager.breeding.feed;
 
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;

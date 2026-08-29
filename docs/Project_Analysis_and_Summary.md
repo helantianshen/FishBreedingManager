@@ -357,7 +357,7 @@ CandidateEntityFilter (多策略组合)
 
 ```
 fishbreedingmanager/
-├── FishBreedingManager.java          # @Mod 主类
+├── FishBreedingManager.java          # @Mod 组成根，仅负责注册
 ├── breeding/
 │   ├── BreedingRule.java             # 不可变规则
 │   ├── BreedingRuleSnapshot.java     # 不可变快照 record
@@ -366,11 +366,17 @@ fishbreedingmanager/
 │   ├── BreedingController.java       # LevelTickEvent 驱动配对/寻路/繁殖
 │   ├── BreedingState.java            # Data Attachment 值对象 + Codec
 │   ├── ActiveLoveIndex.java          # 按 Level 隔离的活动 UUID 索引
-│   └── ChildSpawner.java             # 创建后代并返回结构化结果
+│   ├── feed/                         # 统一喂食与爱心粒子
+│   └── spawn/                        # 后代创建与结构化结果
 ├── attachment/ModAttachments.java    # DeferredRegister<AttachmentType>
+├── server/ServerLifecycleHandler.java # 规则/发现/清理生命周期
 ├── event/
 │   ├── EntityInteractionHandler.java # PlayerInteractEvent.EntityInteract
 │   └── EntityLifecycleHandler.java   # Join/Leave + StartTracking
+├── discovery/                        # Mod/Registry 扫描与发现快照
+├── compat/
+│   ├── CompatibilityCoordinator.java # 核心面向的统一兼容入口
+│   └── feedingtrough/                # Animal Feeding Trough 适配
 ├── persistence/WorldBreedingData.java # 主世界 SavedData，跨维度共享
 ├── command/FBMCommands.java          # /fbm reload + rule 管理命令
 ├── network/
@@ -379,8 +385,10 @@ fishbreedingmanager/
 ├── client/
 │   ├── ClientJuvenileSync.java
 │   └── JuvenileRenderHandler.java
-└── 未来预留：client/screen、discovery、compat/adapter
+└── 未来预留：client/screen、network/editor、compat/adapter
 ```
+
+详细依赖方向和新代码放置规则见 [`ARCHITECTURE.md`](./ARCHITECTURE.md)。
 
 ---
 
@@ -391,7 +399,7 @@ fishbreedingmanager/
 已完成：WorldBreedingData → Runtime Snapshot → 事务校验与原子替换 → BreedingState Attachment → 喂食 → Love →
 配偶搜索 → 寻路 → 生成后代 → 幼体 → 冷却 → 生命周期恢复 → `/fbm rule` 管理命令。
 
-自动化层已有 38 个 JUnit 测试并通过完整构建；实际客户端中的爱心、寻路、模型尺寸、冷却、热更新、区块重载和
+自动化层已有 80 个 JUnit 测试并通过完整构建；实际客户端中的爱心、寻路、模型尺寸、冷却、热更新、区块重载和
 权限可见性均已按 [`testing/P0_Cod_Acceptance.md`](./testing/P0_Cod_Acceptance.md) 完成人工观察，P0 最终验收为 PASS。
 
 验收确认的运行边界：配偶搜索半径固定为 8 格，9 格外不会建立配对；区块恢复只适用于仍存在的实体，未命名鳕鱼被

@@ -6,6 +6,7 @@ import com.fishbreedingmanager.breeding.ActiveLoveIndex;
 import com.fishbreedingmanager.breeding.BreedingRule;
 import com.fishbreedingmanager.breeding.BreedingRuleManager;
 import com.fishbreedingmanager.breeding.BreedingState;
+import com.fishbreedingmanager.compat.CompatibilityCoordinator;
 import com.fishbreedingmanager.network.JuvenileStatePayload;
 
 import net.minecraft.server.level.ServerLevel;
@@ -39,7 +40,9 @@ public final class EntityLifecycleHandler {
         if (!(event.getLevel() instanceof ServerLevel level)) {
             return;
         }
-        restoreEntity(level, event.getEntity(), BreedingRuleManager.get(level.getServer()));
+        BreedingRuleManager manager = BreedingRuleManager.get(level.getServer());
+        restoreEntity(level, event.getEntity(), manager);
+        CompatibilityCoordinator.get().installIfEligible(event.getEntity(), manager);
     }
 
     /**

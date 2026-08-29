@@ -4,6 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+
+import static org.mockito.Mockito.mock;
 
 import java.util.List;
 
@@ -12,11 +15,23 @@ import org.junit.jupiter.api.Test;
 import com.fishbreedingmanager.persistence.WorldBreedingData;
 
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 
 /**
  * 验证规则更新只有在候选全集通过校验后，才同时提交到 {@link WorldBreedingData} 与运行时快照。
  */
 class WorldBreedingServiceTest {
+    /** 可选兼容刷新属于提交后的 best-effort 副作用，失败不得改变核心事务的对外结果。 */
+    @Test
+    void containsCompatibilityRefreshFailureAfterRulePublication() {
+        MinecraftServer server = mock(MinecraftServer.class);
+        WorldBreedingService service = new WorldBreedingService(
+                new RuleValidator(),
+                ignored -> { throw new IllegalStateException("compat refresh failed"); });
+
+        assertDoesNotThrow(() -> service.refreshCompatibility(server));
+    }
+
     /**
      * 无效候选规则必须返回错误，并原样保留之前的存档数据与运行时对象引用。
      */
