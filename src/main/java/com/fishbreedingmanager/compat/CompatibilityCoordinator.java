@@ -10,11 +10,10 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.Entity;
 
 /**
- * Optional third-party integrations exposed through one core-facing boundary.
+ * 通过唯一的核心面向边界暴露全部可选第三方集成。
  *
- * <p>Core lifecycle and rule services depend on this coordinator rather than individual Mod adapters. Each module is
- * isolated so a missing or faulty optional integration cannot prevent later integrations from being installed or
- * refreshed.
+ * <p>核心生命周期与规则服务只依赖本协调器，不依赖任何具体 Mod 适配。各模块彼此隔离，因此缺失或出错的可选集成
+ * 不会阻止其余集成完成安装或刷新，也不会反向影响已经提交的规则快照。
  */
 public final class CompatibilityCoordinator {
     private static final CompatibilityCoordinator INSTANCE = new CompatibilityCoordinator(List.of(
@@ -37,20 +36,20 @@ public final class CompatibilityCoordinator {
     }
 
     /**
-     * Returns the production compatibility registry.
+     * 返回生产环境共享的兼容注册表。
      *
-     * @return shared compatibility coordinator
+     * @return 共享兼容协调器
      */
     public static CompatibilityCoordinator get() {
         return INSTANCE;
     }
 
     /**
-     * Installs every applicable integration on an entity.
+     * 为单个实体安装全部适用的可选集成。
      *
-     * @param entity entity entering a server level
-     * @param manager current server rule manager
-     * @return whether at least one module installed an integration
+     * @param entity 正在进入服务端世界的实体
+     * @param manager 当前服务器规则管理器
+     * @return 至少有一个模块实际安装了集成时返回 {@code true}
      */
     public boolean installIfEligible(Entity entity, BreedingRuleManager manager) {
         boolean installed = false;
@@ -67,9 +66,9 @@ public final class CompatibilityCoordinator {
     }
 
     /**
-     * Re-evaluates already loaded entities after a rule snapshot is published.
+     * 在规则快照发布后重新评估已经加载的实体。
      *
-     * @param server current logical server
+     * @param server 当前逻辑服务器
      */
     public void refreshLoadedEntities(MinecraftServer server) {
         for (Module module : modules) {
@@ -83,9 +82,22 @@ public final class CompatibilityCoordinator {
         }
     }
 
+    /** 单个可选第三方集成向协调器暴露的最小契约。 */
     interface Module {
+        /**
+         * 尝试为指定实体安装本模块的集成。
+         *
+         * @param entity 正在进入服务端世界的实体
+         * @param manager 当前服务器规则管理器
+         * @return 本次实际新增集成时返回 {@code true}
+         */
         boolean installIfEligible(Entity entity, BreedingRuleManager manager);
 
+        /**
+         * 在规则发布后为已加载实体补装本模块的集成。
+         *
+         * @param server 当前逻辑服务器
+         */
         void refreshLoadedEntities(MinecraftServer server);
     }
 }

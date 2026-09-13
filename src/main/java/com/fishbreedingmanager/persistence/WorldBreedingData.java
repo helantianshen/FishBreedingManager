@@ -102,16 +102,6 @@ public final class WorldBreedingData extends SavedData {
     }
 
     /**
-     * 删除指定实体规则并标记数据待保存。
-     *
-     * @param id 实体注册表 ID
-     */
-    public void removeRule(ResourceLocation id) {
-        rules.remove(id);
-        setDirty();
-    }
-
-    /**
      * 用已经完整校验的规则集合整体替换持久化数据。
      *
      * <p>该入口由事务式世界服务在候选全集通过 {@link RuleValidator} 后调用。整体替换可确保删除操作与更新操作

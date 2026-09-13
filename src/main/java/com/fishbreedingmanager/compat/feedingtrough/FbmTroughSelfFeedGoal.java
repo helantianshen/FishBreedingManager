@@ -19,6 +19,13 @@ import net.minecraft.world.level.LevelReader;
 public final class FbmTroughSelfFeedGoal extends MoveToBlockGoal {
     private static final double SPEED_MODIFIER = 1.0D;
     private static final int SEARCH_RANGE = 8;
+    /**
+     * 垂直搜索半径，必须显式提供。
+     *
+     * <p>{@link MoveToBlockGoal} 的三参构造器默认只搜索 {@code ±1} 格高度，这对陆生动物够用，但水生实体通常
+     * 悬浮在喂食槽上方数格，会永远发现不了脚下的槽位。这里与水平半径保持同一量级，同时不至于让鱼横穿整片水体。
+     */
+    private static final int VERTICAL_SEARCH_RANGE = 4;
 
     private final BreedingRuleManager manager;
     private final BreedingFeedService feedService;
@@ -34,7 +41,7 @@ public final class FbmTroughSelfFeedGoal extends MoveToBlockGoal {
      */
     FbmTroughSelfFeedGoal(PathfinderMob mob, BreedingRuleManager manager,
                           BreedingFeedService feedService, AnimalFeedingTroughSource source) {
-        super(mob, SPEED_MODIFIER, SEARCH_RANGE);
+        super(mob, SPEED_MODIFIER, SEARCH_RANGE, VERTICAL_SEARCH_RANGE);
         this.manager = manager;
         this.feedService = feedService;
         this.source = source;

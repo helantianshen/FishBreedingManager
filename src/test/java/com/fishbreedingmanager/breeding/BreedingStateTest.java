@@ -94,14 +94,18 @@ class BreedingStateTest {
     }
 
     /**
-     * 幼体在截止时刻之前固定为半尺寸，到达截止时刻后立即恢复完整尺寸。
+     * 幼体在截止时刻之前保持幼体状态，到达截止时刻后立即成年，不做平滑过渡。
+     *
+     * <p>客户端的固定缩放由 {@code ClientJuvenileSync.scaleFor} 依据同一个绝对成年时刻决定，这里只锁定
+     * 服务端权威状态的瞬时切换语义。
      */
     @Test
-    void visualScaleChangesInstantlyAtAdultAt() {
+    void juvenileFlagFlipsInstantlyAtAdultAt() {
         BreedingState state = new BreedingState();
         state.markJuvenile(200L, 40L);
 
-        assertEquals(0.5F, state.visualScale(239L));
-        assertEquals(1.0F, state.visualScale(240L));
+        assertEquals(240L, state.getAdultAt());
+        assertTrue(state.isJuvenile(239L));
+        assertFalse(state.isJuvenile(240L));
     }
 }

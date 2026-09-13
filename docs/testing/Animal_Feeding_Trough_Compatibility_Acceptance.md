@@ -16,7 +16,8 @@
 - 玩家右键和自动喂食槽共用 `BreedingFeedService`，规则在行为发生时从当前 Snapshot 动态读取。
 - Love 服务不直接修改传入物品；玩家入口在收到 `FED` 后按创造模式语义扣手持物，容器入口则把扣料回调交给服务，在资格通过且来源成功移除一个物品后才提交 Love，避免免费 Love。
 - 喂食槽来源只按稳定方块 Registry ID 识别，并通过 Minecraft 标准 `Container` 读取/移除槽位 0；FBM 对 Animal Feeding Trough 和 Architectury 均无编译硬依赖。
-- `FbmTroughSelfFeedGoal` 搜索半径为 8 格，接受距离为 2 格；目标搜索、继续运行和实际喂食均重新验证当前规则、食物与实体状态。
+- `FbmTroughSelfFeedGoal` 水平搜索半径为 8 格，垂直搜索半径为 4 格，接受距离为 2 格；目标搜索、继续运行和实际喂食均重新验证当前规则、食物与实体状态。
+- Goal 优先级为 3，必须严格小于原版 `AbstractFish` 中 `FishSwimGoal` 的 4，否则 `GoalSelector` 不允许打断正在运行的随机游动；同时保持大于 `AvoidEntityGoal`（2）与 `PanicGoal`（0）。
 - Goal 在实体加入、初始规则加载和规则成功启用/更新时幂等安装；规则禁用或删除后已有 Goal 会因动态查询自动休眠。
 - 不使用 Mixin、反射、ASM 或第三方私有字段。
 

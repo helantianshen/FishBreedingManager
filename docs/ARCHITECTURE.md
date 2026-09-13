@@ -17,7 +17,7 @@ com/fishbreedingmanager/
 ├─ attachment/            实体 Attachment 注册
 ├─ breeding/              规则、实体状态、运行时快照和繁殖编排
 │  ├─ feed/               所有喂食来源共享的 Love 转换与粒子反馈
-│  └─ spawn/              后代创建及结构化生成结果
+│  └─ spawn/              后代创建、Variant 继承及结构化生成结果
 ├─ client/                客户端幼体状态缓存与渲染缩放
 ├─ command/               服务端管理员命令适配层
 ├─ compat/                第三方兼容统一入口
@@ -67,9 +67,13 @@ client -> network state only
 
 - 新的喂食来源：调用 `breeding.feed.BreedingFeedService`，来源只负责提供与消费物品。
 - 新的后代创建策略：放入 `breeding.spawn`，成功前不得修改父母状态。
+- 新的 Variant 继承通道：放入 `breeding.spawn.VariantInheritance`，只允许使用 Minecraft 公共契约（当前为 `Bucketable` 桶数据与 `VariantHolder` 接口），禁止反射、ASM 或私有字段复制；无法识别时必须安全退回默认个体。
 - 新的第三方 Mod：在 `compat/<mod>` 实现，并只通过 `CompatibilityCoordinator` 接入核心生命周期。
+- 新的注入式 AI 目标：优先级必须严格小于需要抢占的原版目标，`GoalSelector` 只允许更小的数字打断正在运行的目标。原版 `AbstractFish` 的 `FishSwimGoal` 在 4、`AvoidEntityGoal` 在 2、`PanicGoal` 在 0，因此鱼类目标使用 3。同时不要依赖 `MoveToBlockGoal` 三参构造器的默认 ±1 垂直搜索范围，水生实体需显式放宽。
+- 成对的客户端渲染事件：Pre 与 Post 必须使用镜像优先级（`LOWEST` 压栈对应 `HIGHEST` 弹栈），保证 FBM 的矩阵是最内层且最先弹出。
 - 新的扫描信号或候选字段：放入 `discovery`，保持 Snapshot 深度不可变和稳定排序。
 - 新的 GUI/网络写操作：客户端只发送意图；服务端校验权限、Registry 和参数后复用统一事务服务。
+- 新增或修改的公共类型、公共 API 与关键私有流程使用中文 Javadoc，不要混入英文文档注释。
 
 ## 7. 验证入口
 

@@ -62,9 +62,13 @@ public final class JuvenileRenderHandler {
     /**
      * 在生物模型绘制后弹出与 {@link #onRenderLivingPre} 对应的矩阵状态。
      *
+     * <p>优先级必须与 Pre 侧成镜像：Pre 与 Post 都按 {@code HIGHEST → LOWEST} 触发，Pre 取 {@code LOWEST}
+     * 表示本 Mod 最后压栈（最内层），因此 Post 必须取 {@code HIGHEST} 才能最先弹栈。若两侧都用默认优先级，
+     * 其他同样使用 push/pop 的 Mod 在 Post 高优先级弹栈时会先弹掉 FBM 压入的那一层，导致矩阵错位。
+     *
      * @param event NeoForge 生物渲染后事件
      */
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderLivingPost(RenderLivingEvent.Post<?, ?> event) {
         if (consumePush(event.getEntity())) {
             event.getPoseStack().popPose();

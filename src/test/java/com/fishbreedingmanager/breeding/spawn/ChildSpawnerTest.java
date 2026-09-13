@@ -3,9 +3,12 @@ package com.fishbreedingmanager.breeding.spawn;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,6 +16,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
 import com.fishbreedingmanager.attachment.ModAttachments;
 import com.fishbreedingmanager.breeding.BreedingRule;
@@ -20,6 +24,7 @@ import com.fishbreedingmanager.breeding.BreedingState;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.phys.Vec3;
@@ -74,7 +79,28 @@ class ChildSpawnerTest {
         assertEquals(ChildSpawnStatus.SUCCESS, result.status());
         assertSame(fixture.child(), result.child());
         assertEquals(1300L, fixture.childState().getAdultAt());
-        assertEquals(0.5F, fixture.childState().visualScale(100L));
+        assertTrue(fixture.childState().isJuvenile(100L));
+    }
+
+    /**
+     * Variant 继承必须发生在后代加入世界之前，使外观随首次实体生成包一起下发到客户端。
+     */
+    @Test
+    void inheritsVariantBeforeAddingChildToLevel() {
+        SpawnFixture fixture = fixture(true);
+        VariantInheritance inheritance = mock(VariantInheritance.class);
+        RandomSource random = mock(RandomSource.class);
+        when(inheritance.inherit(any(), any(), any(), any()))
+                .thenReturn(VariantInheritanceResult.BUCKET_DATA);
+
+        ChildSpawnResult result = new ChildSpawner(inheritance, random).spawn(
+                fixture.level(), fixture.first(), fixture.second(), rule(), 100L);
+
+        assertEquals(ChildSpawnStatus.SUCCESS, result.status());
+        InOrder order = inOrder(inheritance, fixture.level());
+        order.verify(inheritance).inherit(
+                fixture.child(), fixture.first(), fixture.second(), random);
+        order.verify(fixture.level()).addFreshEntity(fixture.child());
     }
 
     /**

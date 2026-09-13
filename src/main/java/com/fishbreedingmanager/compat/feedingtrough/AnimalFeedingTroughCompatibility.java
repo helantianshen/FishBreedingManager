@@ -22,8 +22,16 @@ import net.neoforged.fml.ModList;
 public final class AnimalFeedingTroughCompatibility {
     /** Animal Feeding Trough 的稳定 Mod ID。 */
     public static final String MOD_ID = "animal_feeding_trough";
-    /** 低于恐慌等紧急 AI、接近上游 TemptGoal 后继目标的固定优先级。 */
-    public static final int GOAL_PRIORITY = 4;
+    /**
+     * 取食目标的固定优先级，必须严格小于原版随机游动目标的优先级。
+     *
+     * <p>{@code GoalSelector} 只允许更小的优先级数字抢占正在运行的目标
+     * （{@code WrappedGoal#canBeReplacedBy} 要求 {@code other.getPriority() < this.getPriority()}）。
+     * 原版 {@code AbstractFish} 在优先级 {@code 4} 注册 {@code FishSwimGoal}，因此本目标必须使用 {@code 3}；
+     * 取相同的 {@code 4} 会导致鱼只要正在随机游动就永远无法转去取食。同时保持大于
+     * {@code AvoidEntityGoal}（{@code 2}）与 {@code PanicGoal}（{@code 0}），避免压制躲避和恐慌行为。
+     */
+    public static final int GOAL_PRIORITY = 3;
 
     private AnimalFeedingTroughCompatibility() {
     }

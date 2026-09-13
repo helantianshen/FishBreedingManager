@@ -234,7 +234,11 @@ PacketDistributor.sendToAllPlayers(...);
 - **生成后代**：`EntityType.create(Level)` 创建同类型实例，设置位置，`level.addFreshEntity(child)`。或 `entityType.create(level, CompoundTag, Consumer, BlockPos, Rotation, boolean, MobSpawnType)`。
 - **繁殖冷却**：vanilla `Animal#setAge(growthTime)` 同时承担冷却与成长；FBM 自己用 `BreedingState.cooldownUntil`（gameTime tick）。
 - **繁殖物品抽象**：`BreedingRule` 保存多个物品 ID 与物品标签 ID，运行时用 `ItemStack#is(Item)` / `ItemStack#is(TagKey)` 匹配，语义等价于 P0 所需 Ingredient 子集且 NBT 格式稳定。
-- **Variant 继承**：vanilla `TropicalFish` 用 `SynchedEntityData` 存 variant（`TropicalFish.DATA_ID_TYPE_VARIANT` 等）。FBM v1 对**无法通用识别**的第三方 variant **只创建默认个体**（需求 §12.1），不反射/不 ASM。原版热带鱼可后续用 `BreedingAdapter` 专门适配。
+- **Variant 继承**：后代先按 50/50 随机选出一方父母作为捐赠方，再依次尝试两条 Minecraft 公共通道：
+  ① `Bucketable#saveToBucketTag` / `loadFromBucketTag` 桶数据（剔除 `Bucketable.saveDefaultDataToBucketTag`
+  写入的 `NoAI`/`Silent`/`NoGravity`/`Glowing`/`Invulnerable`/`Health` 六个通用字段后，剩余部分即实体自有身份数据；
+  原版 `TropicalFish` 由此完整继承 `BucketVariantTag` 打包的花纹与双色）；② Mojang 公共 `VariantHolder<T>` 接口。
+  两条都不适用时创建默认个体（需求 §12.1）。不使用反射、ASM 或私有字段复制，第三方 Mod 无需为 FBM 适配。
 
 ### 3.6 管理命令（P0 已实现）
 
@@ -367,7 +371,7 @@ fishbreedingmanager/
 │   ├── BreedingState.java            # Data Attachment 值对象 + Codec
 │   ├── ActiveLoveIndex.java          # 按 Level 隔离的活动 UUID 索引
 │   ├── feed/                         # 统一喂食与爱心粒子
-│   └── spawn/                        # 后代创建与结构化结果
+│   └── spawn/                        # 后代创建、Variant 继承与结构化结果
 ├── attachment/ModAttachments.java    # DeferredRegister<AttachmentType>
 ├── server/ServerLifecycleHandler.java # 规则/发现/清理生命周期
 ├── event/
@@ -440,7 +444,7 @@ fishbreedingmanager/
 7. **主键用 ResourceLocation**：不用类名/本地化名/UUID（需求 §17）。
 8. **繁殖物品用 Ingredient 抽象**：支持多 Item + Tag，不要单 Item 字段（需求 §7）。
 9. **后代 EntityType 必须与父母相同**：不杂交（需求 §5）。
-10. **Variant 不可识别时只创建默认个体**：不反射不 ASM（需求 §12.1）。
+10. **Variant 只走公共契约**：`Bucketable` 桶数据与 `VariantHolder` 接口可用时随机继承父母一方；两者都不可用时创建默认个体，不反射不 ASM（需求 §12、§12.1）。
 11. **性能**：Controller 只跟踪 inLove 实体、N tick 一次配偶搜索、合理半径、O(1) Map 查找，禁止每 tick 扫全实体×全规则（需求 §37）。
 12. **包路径坑**：`PlayerInteractEvent` 在 `...event.entity.player`（有 `entity.`）；Tick 事件在 `...event.tick`（新 API，`Pre`/`Post` 内部类）。
 13. **1.21.1 API 版本坑**：`ResourceLocation`（非 `Identifier`）、`SavedData.Factory<>`（非 `SavedDataType`）、Attachment 客户端同步需手动发包、`DirectionalPayloadHandler`（非 `RegisterClientPayloadHandlersEvent`）。

@@ -13,8 +13,8 @@ import net.minecraft.server.level.ServerLevel;
  * 按服务端 Level 隔离的活跃 Love 实体内存索引。
  *
  * <p>索引只保存当前已加载且处于 FBM Love 时间窗的实体 UUID，使繁殖控制器无需每次扫描世界全部实体。
- * {@link WeakHashMap} 允许已经卸载的 Level 被回收，但正常生命周期仍会主动调用 {@link #clear(ServerLevel)} 或
- * {@link #clearAll()}。本类不做并发同步，全部方法只允许在 Minecraft 服务端主线程调用。
+ * {@link WeakHashMap} 允许已经卸载的 Level 被回收，服务器停止时仍会主动调用 {@link #clearAll()}。
+ * 本类不做并发同步，全部方法只允许在 Minecraft 服务端主线程调用。
  */
 public final class ActiveLoveIndex {
     /** 生产环境共享索引；一个进程中的各服务器会话在停止事件中统一清空。 */
@@ -68,15 +68,6 @@ public final class ActiveLoveIndex {
     public List<UUID> snapshot(ServerLevel level) {
         Set<UUID> ids = byLevel.get(level);
         return ids == null ? List.of() : List.copyOf(ids);
-    }
-
-    /**
-     * 清除一个已卸载 Level 的全部活跃记录。
-     *
-     * @param level 已卸载的服务端 Level
-     */
-    public void clear(ServerLevel level) {
-        byLevel.remove(level);
     }
 
     /**

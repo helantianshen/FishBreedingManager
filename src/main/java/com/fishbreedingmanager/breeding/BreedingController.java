@@ -139,6 +139,9 @@ public final class BreedingController {
     /**
      * 为未配对实体寻找附近同类型可用伙伴，并建立双向临时 UUID 引用。
      *
+     * <p>自身与候选方使用同一组资格条件（有效 Love、无冷却、非幼体、未配对），与 {@link #isValidPair} 的生成前
+     * 复检保持对称，避免只对一方设防。
+     *
      * @param level 当前服务端 Level
      * @param entity 当前处理实体
      * @param state 当前实体状态
@@ -146,6 +149,9 @@ public final class BreedingController {
      */
     private static void findAndPair(ServerLevel level, Entity entity, BreedingState state,
                                     long now) {
+        if (state.isOnCooldown(now) || state.isJuvenile(now)) {
+            return;
+        }
         EntityType<?> type = entity.getType();
         List<UUID> candidates = ActiveLoveIndex.INSTANCE.snapshot(level);
         for (UUID otherId : candidates) {

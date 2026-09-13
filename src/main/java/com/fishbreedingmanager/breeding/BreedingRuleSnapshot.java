@@ -19,6 +19,16 @@ public record BreedingRuleSnapshot(
         Map<ResourceLocation, BreedingRule> rules,
         Set<ResourceLocation> importedEntities
 ) {
+    /**
+     * 防御性复制两个集合，使不可变性由类型自身保证而非依赖调用方传入副本。
+     *
+     * <p>{@link BreedingRule} 本身已经是复制过食物列表的不可变 record，因此浅复制映射即可获得完整不可变快照。
+     */
+    public BreedingRuleSnapshot {
+        rules = Map.copyOf(rules);
+        importedEntities = Set.copyOf(importedEntities);
+    }
+
     /** 尚未从世界数据成功加载时使用的空快照。 */
     public static final BreedingRuleSnapshot EMPTY =
             new BreedingRuleSnapshot(Map.of(), Set.of());

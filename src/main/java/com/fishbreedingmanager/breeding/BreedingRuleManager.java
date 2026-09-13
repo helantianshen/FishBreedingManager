@@ -85,16 +85,6 @@ public final class BreedingRuleManager {
     }
 
     /**
-     * 判断当前快照是否包含指定实体规则，不考虑规则是否启用。
-     *
-     * @param entityId 实体注册表 ID
-     * @return 快照包含该键时返回 {@code true}
-     */
-    public boolean hasRule(ResourceLocation entityId) {
-        return snapshot.rules().containsKey(entityId);
-    }
-
-    /**
      * 判断管理器是否已经成功安装过世界规则快照。
      *
      * <p>该标记用于区分“服务端启动阶段尚未读取 SavedData”和“玩家合法配置了空规则集合”。实体 Join 事件在前一种

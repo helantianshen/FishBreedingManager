@@ -8,7 +8,6 @@ import com.fishbreedingmanager.breeding.BreedingState;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -42,7 +41,6 @@ public final class EntityInteractionHandler {
         }
         Entity target = event.getTarget();
         Player player = event.getEntity();
-        InteractionHand hand = event.getHand();
         ItemStack held = event.getItemStack();
 
         if (player.getServer() == null || !(target.level() instanceof ServerLevel level)) {

@@ -1,6 +1,10 @@
 package com.fishbreedingmanager.discovery;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /** 为日志和后续诊断命令生成稳定、无第三方 Mod 特例的发现来源摘要。 */
 public final class DiscoveryDiagnostics {
@@ -16,9 +20,9 @@ public final class DiscoveryDiagnostics {
      */
     public static List<String> sourceSummaries(DiscoverySnapshot snapshot) {
         return snapshot.detectedMods().entrySet().stream()
-                .sorted(java.util.Map.Entry.comparingByKey())
+                .sorted(Map.Entry.comparingByKey())
                 .map(entry -> summaryFor(entry.getKey(), entry.getValue(), snapshot))
-                .filter(summary -> summary != null)
+                .filter(Objects::nonNull)
                 .toList();
     }
 
@@ -27,7 +31,7 @@ public final class DiscoveryDiagnostics {
         List<CandidateEntity> recognized = snapshot.candidates().values().stream()
                 .filter(candidate -> candidate.sourceModId().equals(sourceModId))
                 .filter(candidate -> candidate.confidence() != CandidateConfidence.LOW)
-                .sorted(java.util.Comparator.comparing(candidate -> candidate.entityTypeId().toString()))
+                .sorted(Comparator.comparing(candidate -> candidate.entityTypeId().toString()))
                 .toList();
         if (recognized.isEmpty()) {
             return null;
@@ -39,7 +43,7 @@ public final class DiscoveryDiagnostics {
         long mediumCount = recognized.size() - highCount;
         String candidateIds = recognized.stream()
                 .map(candidate -> candidate.entityTypeId().toString())
-                .collect(java.util.stream.Collectors.joining(", ", "[", "]"));
+                .collect(Collectors.joining(", ", "[", "]"));
 
         return "source=" + sourceModId
                 + ", version=" + source.version()

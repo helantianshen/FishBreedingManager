@@ -40,6 +40,20 @@ class JuvenileRenderHandlerTest {
     }
 
     /**
+     * Post 处理器必须与 Pre 侧镜像：最后压栈就必须最先弹栈，否则会弹掉其他 Mod 的矩阵。
+     */
+    @Test
+    void postHandlerRunsAtHighestPriorityToMirrorPre() throws NoSuchMethodException {
+        Method method = JuvenileRenderHandler.class.getMethod(
+                "onRenderLivingPost",
+                net.neoforged.neoforge.client.event.RenderLivingEvent.Post.class);
+
+        SubscribeEvent annotation = method.getAnnotation(SubscribeEvent.class);
+
+        assertEquals(EventPriority.HIGHEST, annotation.priority());
+    }
+
+    /**
      * Post 只能消费一次真实 Pre 压栈记录，不能通过重新计算缩放猜测是否需要弹栈。
      */
     @Test

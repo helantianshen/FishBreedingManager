@@ -227,7 +227,8 @@ publishing {
     }
     repositories {
         maven {
-            url "file://${project.projectDir}/repo"
+            // Gradle 9 起必须使用赋值语法；空格调用形式将在 Gradle 10 中移除。
+            url = "file://${project.projectDir}/repo"
         }
     }
 }

@@ -158,32 +158,12 @@ public final class BreedingState {
     }
 
     /**
-     * 立即清除幼体标记和成年截止时间。
-     */
-    public void growUp() {
-        this.juvenile = false;
-        this.adultAt = 0L;
-    }
-
-    /**
      * 返回实体出生时固定下来的绝对成年游戏刻。
      *
      * @return 成年截止游戏刻；未处于幼体阶段时可能为 {@code 0}
      */
     public long getAdultAt() {
         return adultAt;
-    }
-
-    /**
-     * 返回当前时刻的固定视觉缩放系数。
-     *
-     * <p>成年截止时刻之前始终为 {@code 0.5F}，到达截止时刻后立即变为 {@code 1.0F}；不进行平滑插值。
-     *
-     * @param now 当前世界绝对游戏刻
-     * @return 幼体半尺寸或成年完整尺寸
-     */
-    public float visualScale(long now) {
-        return isJuvenile(now) ? 0.5F : 1.0F;
     }
 
     /**
