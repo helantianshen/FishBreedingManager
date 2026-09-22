@@ -1,5 +1,7 @@
 # 本地第三方鱼类 Mod 组合验收记录
 
+> 2026-09-23 更新：下文保留 2026-08-29 五 Jar 服务端验收证据；完整七 Jar 客户端与 Pike、Perch、Lionfish、Tuna 交互仍待测。后续启动指令、逐物种步骤和预期见 [892cbf9 客户端验收手册](../pending/Compatibility_Test_Manual.md)。按用户要求，暂不继续实机测试。
+
 ## 结论
 
 2026-08-29 在 Minecraft 1.21.1、NeoForge 21.1.244 开发服务器中同时加载本地目录的五个顶层 Jar，服务器到达 `Done`，FBM 完成 210 个 EntityType 的通用扫描并正常发布快照。
@@ -76,13 +78,6 @@ Farmer's Delight 与 Blueprint 已加载但未出现在来源摘要中，含义�
 
 这些错误在 FBM 扫描前发生，但没有中止数据加载、服务器启动、实体注册、候选发布或停服保存。FBM 不应修改、覆盖或静默过滤第三方数据资源；如需要消除日志错误，应由对应 Mod 更新资源文件或使用经确认兼容的版本组合。
 
-## 尚待客户端人工验收
+## 后续覆盖
 
-本轮没有直接观察以下客户端行为，因此不计为通过：
-
-- Pike、Perch、Lionfish、Youkai Tuna 的模型、动画、尺寸与碰撞；
-- 对四种新增候选配置 FBM 规则后的玩家喂食、Love、配偶搜索、同类型后代、冷却和成长；
-- Upgrade Aquatic/Youkai 原生 AI 与 FBM 繁殖导航的长期并存；
-- 后代是否需要继承第三方 Variant 或其他私有数据。
-
-只有出现可复现的实体创建、Variant 或行为契约缺口时才考虑可选 Adapter；当前服务端结果不支持加入任何 Mod 专用生产代码。
+本记录保留当时通过的服务端检查及限制。后续客户端结果见 [892cbf9 已通过记录](892cbf9_Client_Acceptance.md)，未覆盖项目及步骤统一维护在 [待测手册](../pending/Compatibility_Test_Manual.md)。

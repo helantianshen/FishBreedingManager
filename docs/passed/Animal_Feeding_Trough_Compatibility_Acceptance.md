@@ -1,5 +1,7 @@
 # Animal Feeding Trough 兼容验收记录
 
+> 2026-09-23 更新：本提交的三 Jar 客户端槽喂、60 秒冷却、规则开关、重进世界与原版牛回归已获用户实机确认。其余兼容项目按用户要求暂停，完整指令、预期及证据边界见 [892cbf9 客户端验收手册](../pending/Compatibility_Test_Manual.md)。下文运行时边界为 2026-08-29 的历史状态，不代表当前仍缺少喂食槽依赖。
+
 ## 范围与版本
 
 - 目标 Mod：Animal Feeding Trough。
@@ -33,20 +35,6 @@
 - `./gradlew.bat javadoc --rerun-tasks`：BUILD SUCCESSFUL，无 Javadoc warning。
 - `./gradlew.bat build`：BUILD SUCCESSFUL。
 
-## 当前运行时边界
+## 历史验收边界
 
-`E:\JavaCodes\FishBreedingManager\常见鱼类mod及前置` 当前只有 Aquaculture、Upgrade Aquatic、Youkai、Farmer's Delight 和 Blueprint 五个 Jar；没有 Animal Feeding Trough 或 Architectury API Jar。因此本轮完成了源码契约核对、零硬依赖实现和自动化回归，尚未宣称真实喂食槽开发客户端验收通过。
-
-## 用户统一人工测试清单
-
-将对应 Minecraft 1.21.1 NeoForge 的 Animal Feeding Trough 1.1.2 与 Architectury API Jar 放入上述本地兼容目录后，通过现有 `fbmCompatModsDir`/`fbmCompatModsInclude` 启动可见开发客户端：
-
-1. 确认日志中同时加载 FBM、Animal Feeding Trough、Architectury 和待测鱼类 Mod，且无 FBM ERROR。
-2. 为原版鳕鱼、Aquaculture 代表鱼、Upgrade Aquatic Pike/Perch/Lionfish 和 Youkai Tuna 建立并启用当前 FBM 规则。
-3. 每类放置两只成年鱼，在水中可达位置放置喂食槽，并在槽位 0 放入对应规则食物。
-4. 观察鱼主动接近、每只只扣一个食物、出现爱心、寻找同 EntityType 配偶并生成同 EntityType 幼体。
-5. 观察父母冷却、幼体 50% 渲染与按规则成年恢复。
-6. 分别验证错误食物、幼体、冷却中和已 Love 实体不消费食物。
-7. 实体已加载时执行 `/fbm rule disable`，确认立即停止取食；再 enable，确认无需重进世界即可恢复。
-8. 用牛或羊验证上游原生行为仍正常，单次喂食不发生双重扣料。
-9. 保存退出并重进世界，重复一次取食与繁殖，确认 Goal 安装幂等且状态恢复正常。
+2026-08-29 仅完成源码契约与自动化检查，当时未安装真实喂食槽依赖，不能作为客户端通过证据。2026-09 的客户端结果见 [892cbf9 已通过记录](892cbf9_Client_Acceptance.md)，后续步骤见 [待测手册](../pending/Compatibility_Test_Manual.md)。

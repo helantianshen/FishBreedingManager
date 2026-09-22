@@ -1,6 +1,6 @@
 # Fish Breeding Manager 架构说明
 
-本文描述当前源码的职责边界和依赖方向。产品行为以 `Fish_Breeding_Manager_Requirements.md` 为准，跨会话进度以 `.agent/HANDOFF.md` 为准。
+本文描述当前源码的职责边界和依赖方向。实现边界和有效产品约束见 [PROJECT.md](PROJECT.md)。
 
 ## 1. 工程入口
 
@@ -31,7 +31,7 @@ com/fishbreedingmanager/
 
 测试目录镜像生产包。包级测试构造器随能力一起移动，避免为了测试扩大生产 API。
 
-当前版本为 0.1.0，尚未发布稳定的第三方 Java API。`breeding.feed` 与 `breeding.spawn` 是本次目录整理后的包名；若未来正式开放 Addon API，应在独立的稳定 `api` 包中提供契约，并通过弃用周期迁移，不应让 Addon 直接依赖内部运行时包。
+当前版本为 0.1.0，尚未发布稳定的第三方 Java API。`breeding.feed` 与 `breeding.spawn` 属于内部运行时包，不应作为稳定 Addon API 对外承诺。
 
 ## 3. 核心所有权
 
@@ -83,4 +83,4 @@ client -> network state only
 .\gradlew.bat build --rerun-tasks
 ```
 
-第三方 Mod 的真实运行与人工验收步骤位于 `docs/testing/`；自动化通过不能替代水下寻路、渲染和容器扣料的可见客户端验收。
+第三方 Mod 的真实运行与人工验收步骤见 [测试文档](../docs/README.md)；自动化通过不能替代水下寻路、渲染和容器扣料的可见客户端验收。

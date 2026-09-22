@@ -77,16 +77,6 @@ aquaculture:tuna
 
 Gradle 启动任务没有转发服务端标准输入，因此测试期间临时启用仅绑定本机连接的 RCON 发送命令。验收后使用 `stop` 正常停服，日志确认三维度全部保存；`run/server.properties` 已恢复为 `enable-rcon=false` 且密码为空。
 
-## 尚待客户端人工验收
+## 后续覆盖
 
-以下项目没有在本轮被直接观察，因此不计为通过：
-
-- Smallmouth Bass 配置 FBM 规则后，玩家右键喂食进入 Love；
-- 两条 Smallmouth Bass 配偶搜索、寻路、同类型后代生成与父母冷却；
-- Aquaculture 原有鱼群 Goal 与 FBM 繁殖导航长期并存时无卡死或异常抖动；
-- FBM 幼体缩放、成长恢复以及重进世界后的状态恢复；
-- Smallmouth Bass 常规渲染；
-- Minnow、Arapaima、Gar 的极端体型、碰撞与幼体 50% 缩放观感；
-- Aquaculture 重量/Variant 数据是否需要可选 Adapter 才能继承到后代。
-
-这些项目需要在可见开发客户端中由玩家实际操作和观察。若默认个体已满足需求，继续保持通用零硬依赖路线；只有出现可复现的 Variant 丢失或创建异常时才设计可选 Adapter。
+本记录保留当时通过的服务端检查及限制。后续客户端结果见 [892cbf9 已通过记录](892cbf9_Client_Acceptance.md)，未覆盖项目及步骤统一维护在 [待测手册](../pending/Compatibility_Test_Manual.md)。
