@@ -18,10 +18,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * 验证规则更新只有在候选全集通过校验后，才同时提交到 {@link WorldBreedingData} 与运行时快照。
+ * 验证规则更新只有在候选全集通过校验后，才同时提交到 {@link WorldBreedingData} 与运行时快照
  */
 class WorldBreedingServiceTest {
-    /** 可选兼容刷新属于提交后的 best-effort 副作用，失败不得改变核心事务的对外结果。 */
+    /** 可选兼容刷新属于提交后的 best-effort 副作用，失败不得改变核心事务的对外结果 */
     @Test
     void containsCompatibilityRefreshFailureAfterRulePublication() {
         MinecraftServer server = mock(MinecraftServer.class);
@@ -33,7 +33,7 @@ class WorldBreedingServiceTest {
     }
 
     /**
-     * 无效候选规则必须返回错误，并原样保留之前的存档数据与运行时对象引用。
+     * 无效候选规则必须返回错误，并原样保留之前的存档数据与运行时对象引用
      */
     @Test
     void invalidUpdatePreservesSavedDataAndRuntimeSnapshot() {
@@ -53,7 +53,7 @@ class WorldBreedingServiceTest {
     }
 
     /**
-     * 有效候选规则必须同时替换持久化数据与运行时快照，并返回提交后的规则总数。
+     * 有效候选规则必须同时替换持久化数据与运行时快照，并返回提交后的规则总数
      */
     @Test
     void validUpdateReplacesSavedDataAndRuntimeSnapshotTogether() {
@@ -71,7 +71,7 @@ class WorldBreedingServiceTest {
     }
 
     /**
-     * 删除存在的规则应同时更新两个状态容器；删除不存在的规则则必须保持现状并返回失败。
+     * 删除存在的规则应同时更新两个状态容器；删除不存在的规则则必须保持现状并返回失败
      */
     @Test
     void removeCommitsOnlyWhenRuleExists() {
@@ -95,7 +95,7 @@ class WorldBreedingServiceTest {
     }
 
     /**
-     * 启用状态更新只能改变 {@code enabled} 字段，其余食物与计时配置必须完整保留。
+     * 启用状态更新只能改变 {@code enabled} 字段，其余食物与计时配置必须完整保留
      */
     @Test
     void setEnabledPreservesOtherRuleFields() {
@@ -117,7 +117,7 @@ class WorldBreedingServiceTest {
     }
 
     /**
-     * 创建测试使用的鳕鱼规则，只改变食物 ID 以隔离事务行为。
+     * 创建测试使用的鳕鱼规则，只改变食物 ID 以隔离事务行为
      *
      * @param food 单个繁殖物品 ID
      * @return 启用且计时合法的鳕鱼规则

@@ -27,17 +27,17 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 
 /**
- * 验证实体加载恢复不会在规则快照初始化前破坏持久化 Love，也不会给无关实体创建空 Attachment。
+ * 验证实体加载恢复不会在规则快照初始化前破坏持久化 Love，也不会给无关实体创建空 Attachment
  */
 class EntityLifecycleHandlerTest {
-    /** 每个测试后清理生产单例索引，防止 UUID 跨测试泄漏。 */
+    /** 每个测试后清理生产单例索引，防止 UUID 跨测试泄漏 */
     @AfterEach
     void clearIndex() {
         ActiveLoveIndex.INSTANCE.clearAll();
     }
 
     /**
-     * 启动早期 Snapshot 尚未安装时必须完全跳过实体，不读取或清除附件状态。
+     * 启动早期 Snapshot 尚未安装时必须完全跳过实体，不读取或清除附件状态
      */
     @Test
     void leavesEntityUntouchedBeforeRuleManagerInitialization() {
@@ -53,7 +53,7 @@ class EntityLifecycleHandlerTest {
     }
 
     /**
-     * 已初始化后，无 FBM Attachment 的普通实体也只能执行只读查询，不能通过 {@code getData} 创建默认状态。
+     * 已初始化后，无 FBM Attachment 的普通实体也只能执行只读查询，不能通过 {@code getData} 创建默认状态
      */
     @Test
     void doesNotCreateAttachmentForUnrelatedEntity() {
@@ -71,7 +71,7 @@ class EntityLifecycleHandlerTest {
     }
 
     /**
-     * 已初始化且规则启用时，应恢复有效 Love 索引并清除旧会话 mate。
+     * 已初始化且规则启用时，应恢复有效 Love 索引并清除旧会话 mate
      */
     @Test
     void restoresExistingActiveLoveAfterInitialization() {

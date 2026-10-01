@@ -14,13 +14,13 @@ import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
 
 /**
- * 验证 {@link BreedingState} 的持久化边界和绝对时间语义。
+ * 验证 {@link BreedingState} 的持久化边界和绝对时间语义
  *
- * <p>配偶 UUID 只属于当前运行会话中的导航关系，不能随实体附件保存；Love、冷却和成长截止时间则必须跨存档保留。
+ * <p>配偶 UUID 只属于当前运行会话中的导航关系，不能随实体附件保存；Love、冷却和成长截止时间则必须跨存档保留
  */
 class BreedingStateTest {
     /**
-     * 实体重新加入世界时应保留仍有效的 Love 窗口，但必须放弃旧配偶并重新参与匹配。
+     * 实体重新加入世界时应保留仍有效的 Love 窗口，但必须放弃旧配偶并重新参与匹配
      */
     @Test
     void prepareForLevelJoinPreservesActiveLoveAndClearsMate() {
@@ -36,7 +36,7 @@ class BreedingStateTest {
     }
 
     /**
-     * 已经过期的 Love 在实体加入世界时应被惰性结算，且不能进入活动索引。
+     * 已经过期的 Love 在实体加入世界时应被惰性结算，且不能进入活动索引
      */
     @Test
     void prepareForLevelJoinExpiresOldLove() {
@@ -52,7 +52,7 @@ class BreedingStateTest {
     }
 
     /**
-     * 编码结果不能包含临时配偶关系，防止卸载前的 UUID 在读档后继续控制实体。
+     * 编码结果不能包含临时配偶关系，防止卸载前的 UUID 在读档后继续控制实体
      */
     @Test
     void codecDoesNotPersistMate() {
@@ -68,7 +68,7 @@ class BreedingStateTest {
     }
 
     /**
-     * 旧版本存档可能仍含 {@code mate} 字段；新解码器应忽略该字段并保留其余有效状态。
+     * 旧版本存档可能仍含 {@code mate} 字段；新解码器应忽略该字段并保留其余有效状态
      */
     @Test
     void codecIgnoresLegacyMateField() {
@@ -94,10 +94,10 @@ class BreedingStateTest {
     }
 
     /**
-     * 幼体在截止时刻之前保持幼体状态，到达截止时刻后立即成年，不做平滑过渡。
+     * 幼体在截止时刻之前保持幼体状态，到达截止时刻后立即成年，不做平滑过渡
      *
      * <p>客户端的固定缩放由 {@code ClientJuvenileSync.scaleFor} 依据同一个绝对成年时刻决定，这里只锁定
-     * 服务端权威状态的瞬时切换语义。
+     * 服务端权威状态的瞬时切换语义
      */
     @Test
     void juvenileFlagFlipsInstantlyAtAdultAt() {

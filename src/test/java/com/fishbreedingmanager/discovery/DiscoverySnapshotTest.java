@@ -14,7 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
 
 /**
- * 验证发现快照不会暴露可变集合，避免扫描中间状态泄露给未来命令或 GUI。
+ * 验证发现快照不会暴露可变集合，避免扫描中间状态泄露给命令或 GUI
  */
 class DiscoverySnapshotTest {
     @Test

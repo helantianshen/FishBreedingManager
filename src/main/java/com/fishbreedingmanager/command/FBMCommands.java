@@ -10,6 +10,7 @@ import com.fishbreedingmanager.breeding.ParsedFood;
 import com.fishbreedingmanager.breeding.ReloadResult;
 import com.fishbreedingmanager.breeding.RuleUpdateResult;
 import com.fishbreedingmanager.breeding.WorldBreedingService;
+import com.fishbreedingmanager.network.ManagementServer;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -24,14 +25,15 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 /**
- * 构建并执行 {@code /fbm} 管理员命令树。
+ * 构建包含公开查询与受控写入的 {@code /fbm} 命令树
  *
- * <p>权限检查统一放在根节点，所有重载、查询和修改操作都严格要求
- * {@link CommandSourceStack#hasPermission(int) 权限等级 2}。这意味着未开启作弊的单人世界同样不能使用命令。
- * 修改操作只调用 {@link WorldBreedingService}，不会绕过完整规则校验直接写入存档。
+ * <p>查询和 GUI 入口允许任何玩家，重载和修改操作严格要求
+ * {@link CommandSourceStack#hasPermission(int) 权限等级 2}；单机也按服务端实际权限判断写入资格
+ * 修改操作只调用 {@link WorldBreedingService}，不会绕过完整规则校验直接写入存档
  *
- * <p>支持的 P0 命令包括：
+ * <p>支持的命令包括：
  * <ul>
+ *   <li>{@code /fbm gui}</li>
  *   <li>{@code /fbm reload}</li>
  *   <li>{@code /fbm rule list}</li>
  *   <li>{@code /fbm rule show <entity>}</li>
@@ -44,7 +46,7 @@ public final class FBMCommands {
     }
 
     /**
-     * 将完整 FBM 命令树注册到当前服务端命令分发器。
+     * 将完整 FBM 命令树注册到当前服务端命令分发器
      *
      * @param event NeoForge 命令注册事件
      */
@@ -53,16 +55,22 @@ public final class FBMCommands {
     }
 
     /**
-     * 构建可独立测试的完整命令树。
+     * 构建可独立测试的完整命令树
      *
-     * <p>方法保持包级可见，单元测试可以在不启动真实服务端的情况下验证 Brigadier 权限与语法。
+     * <p>方法保持包级可见，单元测试可以在不启动真实服务端的情况下验证 Brigadier 权限与语法
      *
-     * @return 带根节点权限约束的 {@code fbm} 字面量构建器
+     * @return 带各写分支权限约束的 {@code fbm} 字面量构建器
      */
     static LiteralArgumentBuilder<CommandSourceStack> build() {
         return Commands.literal("fbm")
-                .requires(source -> source.hasPermission(2))
-                .then(Commands.literal("reload")
+                .then(Commands.literal("gui").executes(context -> {
+                    if (!context.getSource().isPlayer()) {
+                        context.getSource().sendFailure(Component.translatable("gui.fbm.player_only"));
+                        return 0;
+                    }
+                    return ManagementServer.open(context.getSource().getPlayerOrException());
+                }))
+                .then(Commands.literal("reload").requires(source -> source.hasPermission(2))
                         .executes(FBMCommands::reload))
                 .then(Commands.literal("rule")
                         .then(Commands.literal("list")
@@ -70,25 +78,25 @@ public final class FBMCommands {
                         .then(Commands.literal("show")
                                 .then(Commands.argument("entity", ResourceLocationArgument.id())
                                         .executes(FBMCommands::show)))
-                        .then(Commands.literal("set")
+                        .then(Commands.literal("set").requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("entity", ResourceLocationArgument.id())
                                         .then(Commands.argument("cooldown", IntegerArgumentType.integer(0))
                                                 .then(Commands.argument("growth", IntegerArgumentType.integer(0))
                                                         .then(Commands.argument("foods", StringArgumentType.greedyString())
                                                                 .executes(FBMCommands::set))))))
-                        .then(Commands.literal("enable")
+                        .then(Commands.literal("enable").requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("entity", ResourceLocationArgument.id())
                                         .executes(context -> setEnabled(context, true))))
-                        .then(Commands.literal("disable")
+                        .then(Commands.literal("disable").requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("entity", ResourceLocationArgument.id())
                                         .executes(context -> setEnabled(context, false))))
-                        .then(Commands.literal("remove")
+                        .then(Commands.literal("remove").requires(source -> source.hasPermission(2))
                                 .then(Commands.argument("entity", ResourceLocationArgument.id())
                                         .executes(FBMCommands::remove))));
     }
 
     /**
-     * 重新校验当前存档中的完整规则集合并原子安装运行时快照。
+     * 重新校验当前存档中的完整规则集合并原子安装运行时快照
      *
      * @param context Brigadier 命令上下文
      * @return 成功返回 {@link Command#SINGLE_SUCCESS}，失败返回 {@code 0}
@@ -107,7 +115,7 @@ public final class FBMCommands {
     }
 
     /**
-     * 按实体 ID 排序输出当前运行时快照中的全部规则。
+     * 按实体 ID 排序输出当前运行时快照中的全部规则
      *
      * @param context Brigadier 命令上下文
      * @return 至少为 {@code 1} 的输出条数
@@ -123,7 +131,7 @@ public final class FBMCommands {
     }
 
     /**
-     * 输出指定实体当前生效的完整规则。
+     * 输出指定实体当前生效的完整规则
      *
      * @param context Brigadier 命令上下文
      * @return 找到规则时返回成功，否则返回 {@code 0}
@@ -145,7 +153,7 @@ public final class FBMCommands {
     }
 
     /**
-     * 解析完整规则参数并事务式新增或替换实体规则。
+     * 解析完整规则参数并事务式新增或替换实体规则
      *
      * @param context Brigadier 命令上下文
      * @return 提交成功返回 {@link Command#SINGLE_SUCCESS}，解析或校验失败返回 {@code 0}
@@ -171,7 +179,7 @@ public final class FBMCommands {
     }
 
     /**
-     * 事务式切换指定规则的启用状态。
+     * 事务式切换指定规则的启用状态
      *
      * @param context Brigadier 命令上下文
      * @param enabled 目标启用状态
@@ -187,7 +195,7 @@ public final class FBMCommands {
     }
 
     /**
-     * 事务式删除指定实体规则。
+     * 事务式删除指定实体规则
      *
      * @param context Brigadier 命令上下文
      * @return 提交成功返回 {@link Command#SINGLE_SUCCESS}，失败返回 {@code 0}
@@ -201,7 +209,7 @@ public final class FBMCommands {
     }
 
     /**
-     * 将统一的事务结果转换为命令反馈与 Brigadier 返回码。
+     * 将统一的事务结果转换为命令反馈与 Brigadier 返回码
      *
      * @param source 命令来源
      * @param entityId 本次操作目标实体 ID
@@ -222,7 +230,7 @@ public final class FBMCommands {
     }
 
     /**
-     * 将规则格式化为适合管理员调试输出的单行文本。
+     * 将规则格式化为适合管理员调试输出的单行文本
      *
      * @param rule 待输出规则
      * @return 包含实体、启用状态、计时器和食物来源的确定性单行文本

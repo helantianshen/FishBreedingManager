@@ -10,11 +10,11 @@ import org.junit.jupiter.api.Test;
 import com.fishbreedingmanager.network.JuvenileStatePayload;
 
 /**
- * 验证客户端幼体缓存采用固定半尺寸并在成年时刻瞬间切换。
+ * 验证客户端幼体缓存采用固定半尺寸并在成年时刻瞬间切换
  */
 class ClientJuvenileSyncTest {
     /**
-     * 每个测试后清空静态缓存，避免测试执行顺序影响结果。
+     * 每个测试后清空静态缓存，避免测试执行顺序影响结果
      */
     @AfterEach
     void clearCache() {
@@ -22,7 +22,7 @@ class ClientJuvenileSyncTest {
     }
 
     /**
-     * 收到服务端状态后，成年前始终为 {@code 0.5F}，到达截止时刻立即变为 {@code 1.0F}。
+     * 收到服务端状态后，成年前始终为 {@code 0.5F}，到达截止时刻立即变为 {@code 1.0F}
      */
     @Test
     void scaleStaysFixedUntilAdultAt() {
@@ -36,7 +36,7 @@ class ClientJuvenileSyncTest {
     }
 
     /**
-     * 清空缓存后所有未知实体都应按成年尺寸渲染。
+     * 清空缓存后所有未知实体都应按成年尺寸渲染
      */
     @Test
     void clearRemovesRememberedState() {

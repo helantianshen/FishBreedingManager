@@ -4,8 +4,8 @@
 
 ## 1. 工程入口
 
-- `FishBreedingManager` 是服务端与通用逻辑的组成根，只注册 Attachment、网络、命令和 `ServerLifecycleHandler`。
-- `FishBreedingManagerClient` 只注册客户端同步与渲染行为。
+- `FishBreedingManager` 是服务端与通用逻辑的组成根，注册 Attachment、网络、命令、服务器生命周期和管理会话事件。
+- `FishBreedingManagerClient` 注册客户端同步、GUI 回复处理器与默认使用 K 且可自定义的原版按键；通用网络注册不得提前解析 GUI 类。
 - `server/ServerLifecycleHandler` 负责规则初始加载、已加载实体恢复、发现快照重建和服务器停止清理。
 
 入口类不承载玩法算法。新增生命周期工作优先放入 `server` 或对应功能包，再由入口完成注册。
@@ -18,20 +18,20 @@ com/fishbreedingmanager/
 ├─ breeding/              规则、实体状态、运行时快照和繁殖编排
 │  ├─ feed/               所有喂食来源共享的 Love 转换与粒子反馈
 │  └─ spawn/              后代创建、Variant 继承及结构化生成结果
-├─ client/                客户端幼体状态缓存与渲染缩放
+├─ client/                客户端幼体状态缓存、渲染缩放与 gui 管理页面
 ├─ command/               服务端管理员命令适配层
 ├─ compat/                第三方兼容统一入口
 │  └─ feedingtrough/      Animal Feeding Trough 的具体适配
 ├─ discovery/             Mod/EntityType 扫描、分类和不可变发现快照
 ├─ event/                 实体交互、加入、离开和追踪事件适配层
-├─ network/               Payload 注册与稳定传输模型
+├─ network/               Payload 注册、有界管理协议与玩家请求适配
 ├─ persistence/           按存档保存的规则与导入实体集合
 └─ server/                服务器生命周期协调
 ```
 
 测试目录镜像生产包。包级测试构造器随能力一起移动，避免为了测试扩大生产 API。
 
-当前版本为 0.1.0，尚未发布稳定的第三方 Java API。`breeding.feed` 与 `breeding.spawn` 属于内部运行时包，不应作为稳定 Addon API 对外承诺。
+当前版本为 0.2.0，尚未发布稳定的第三方 Java API。`breeding.feed` 与 `breeding.spawn` 属于内部运行时包，不应作为稳定 Addon API 对外承诺。
 
 ## 3. 核心所有权
 
@@ -48,16 +48,18 @@ server/event/command -> breeding + discovery
 breeding -> persistence + attachment + network contracts
 compat -> breeding public services + Minecraft stable contracts
 core lifecycle -> CompatibilityCoordinator -> concrete compat adapters
-client -> network state only
+client -> network read/write intents + authoritative replies
 ```
 
 关键限制：
 
 1. `breeding`、`event` 和 `server` 不直接引用具体第三方适配包；统一经过 `CompatibilityCoordinator`。
 2. 具体兼容适配不得引用第三方 Java 类型，优先使用 Registry ID、Tag 和 Minecraft 公共接口。
-3. `discovery` 只识别候选，不擅自启用玩法规则；管理员导入与规则提交属于后续独立事务层。
-4. `command` 和未来 GUI 都是输入适配层，不自行复制校验、持久化或 Snapshot 发布逻辑。
-5. `client` 不决定权限、规则有效性、繁殖结果或持久化状态。
+3. `discovery` 只识别候选，不擅自启用玩法规则；管理员导入由 `WorldBreedingService.changeImport` 预构建发现视图后统一发布。
+4. `command` 和 GUI 网络处理器都是输入适配层，不自行复制校验、持久化或 Snapshot 发布逻辑。
+5. `client` 不决定权限、规则有效性、繁殖结果或持久化状态。客户端按请求序号收齐有界目录块后才发布只读缓存，旧修订号写入由服务端拒绝。
+
+管理规则与导入集合共用世界级修订号；命令更新通过同一个 Snapshot 安装入口推进修订号，标签目录变化同样使管理基线失效。服务端只向正在浏览的会话发送失效通知。首次规则加载失败时，管理器保留未应用的存档只读诊断副本，玩法仍只读取有效运行时 Snapshot。
 
 ## 5. 热更新与失败边界
 

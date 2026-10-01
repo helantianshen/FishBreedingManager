@@ -29,10 +29,10 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
 
 /**
- * 验证后代 Variant 继承只走 Minecraft 公共契约，并在任何不确定情况下退回默认个体（需求 §12、§12.1）。
+ * 验证后代 Variant 继承只走 Minecraft 公共契约，并在任何不确定情况下退回默认个体
  */
 class VariantInheritanceTest {
-    /** 捐赠方选择必须是父母双方各 50%，由随机源的布尔值直接决定。 */
+    /** 捐赠方选择必须是父母双方各 50%，由随机源的布尔值直接决定 */
     @Test
     void 按随机布尔值在两个亲本之间选择捐赠方() {
         TropicalFish child = tropicalFish();
@@ -52,7 +52,7 @@ class VariantInheritanceTest {
         assertEquals(2, captor.getAllValues().get(1).getInt("BucketVariantTag"));
     }
 
-    /** 只含通用个体字段的桶标签不构成 Variant，不得写入后代。 */
+    /** 只含通用个体字段的桶标签不构成 Variant，不得写入后代 */
     @Test
     void 忽略只包含通用个体字段的桶标签() {
         TropicalFish child = tropicalFish();
@@ -70,7 +70,7 @@ class VariantInheritanceTest {
         verify(child, never()).loadFromBucketTag(any());
     }
 
-    /** 通用字段集合必须与 {@code Bucketable.saveDefaultDataToBucketTag} 写入的键完全一致。 */
+    /** 通用字段集合必须与 {@code Bucketable.saveDefaultDataToBucketTag} 写入的键完全一致 */
     @Test
     void 剔除全部通用个体字段并保留自有数据() {
         CompoundTag tag = new CompoundTag();
@@ -89,9 +89,9 @@ class VariantInheritanceTest {
     }
 
     /**
-     * 不是 Bucketable 的实体应退回 Mojang 公共 {@link VariantHolder} 接口。
+     * 不是 Bucketable 的实体应退回 Mojang 公共 {@link VariantHolder} 接口
      *
-     * <p>这里用原版兔子验证通道本身与鱼类无关：任何实现了该公共接口的实体都能自动获得继承能力。
+     * <p>这里用原版兔子验证通道本身与鱼类无关：任何实现了该公共接口的实体都能自动获得继承能力
      */
     @Test
     void 非桶装实体退回VariantHolder接口() {
@@ -108,7 +108,7 @@ class VariantInheritanceTest {
         verify(child).setVariant(Rabbit.Variant.BLACK);
     }
 
-    /** 既不是 Bucketable 也不是 VariantHolder 的实体保持默认个体。 */
+    /** 既不是 Bucketable 也不是 VariantHolder 的实体保持默认个体 */
     @Test
     void 无公共契约的实体保持默认个体() {
         Entity child = mock(Entity.class);
@@ -120,7 +120,7 @@ class VariantInheritanceTest {
                 new VariantInheritance().inherit(child, donor, donor, randomReturning(true)));
     }
 
-    /** 类型不一致时绝不写入，避免非受检的 Variant 类型转换在运行时失败。 */
+    /** 类型不一致时绝不写入，避免非受检的 Variant 类型转换在运行时失败 */
     @Test
     void 类型不一致时不做任何继承() {
         TropicalFish child = tropicalFish();
@@ -132,7 +132,7 @@ class VariantInheritanceTest {
         verify(child, never()).loadFromBucketTag(any());
     }
 
-    /** 第三方实现抛出异常时只记录并保持默认个体，不影响后代出生。 */
+    /** 读取桶数据时发生异常应返回失败结果，不调用后代的写入接口 */
     @Test
     void 第三方异常被隔离为默认个体() {
         TropicalFish child = tropicalFish();
@@ -147,8 +147,8 @@ class VariantInheritanceTest {
     }
 
     /**
-     * 生产读取器必须真正走 {@code getBucketItemStack} 到 {@code BUCKET_ENTITY_DATA} 组件的公共路径，
-     * 并在写入后代之前剔除通用字段。
+     * 生产读取器必须真正走 {@code getBucketItemStack} 到 {@code BUCKET_ENTITY_DATA} 组件的公共路径
+     * 并在写入后代之前剔除通用字段
      */
     @Test
     void 生产桶标签读取器走真实组件路径() {
@@ -173,7 +173,7 @@ class VariantInheritanceTest {
         assertFalse(captor.getValue().contains("Health"));
     }
 
-    /** 捐赠方不提供桶物品时安全退化，不得调用写出方法。 */
+    /** 捐赠方不提供桶物品时安全退化，不得调用写出方法 */
     @Test
     void 捐赠方没有桶物品时安全退化() {
         TropicalFish child = tropicalFish();

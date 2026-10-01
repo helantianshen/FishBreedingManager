@@ -11,19 +11,19 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.LevelReader;
 
 /**
- * 让有 FBM 规则但不继承原版 Animal 的可寻路实体主动使用 Animal Feeding Trough。
+ * 让有 FBM 规则但不继承原版 Animal 的可寻路实体主动使用 Animal Feeding Trough
  *
  * <p>目标不缓存食物或规则；搜索、继续执行和到达时都通过 {@link BreedingFeedService} 查询当前运行时快照，保证
- * 规则禁用、删除或换食物后立即停止生效。
+ * 规则禁用、删除或换食物后立即停止生效
  */
 public final class FbmTroughSelfFeedGoal extends MoveToBlockGoal {
     private static final double SPEED_MODIFIER = 1.0D;
     private static final int SEARCH_RANGE = 8;
     /**
-     * 垂直搜索半径，必须显式提供。
+     * 垂直搜索半径，必须显式提供
      *
      * <p>{@link MoveToBlockGoal} 的三参构造器默认只搜索 {@code ±1} 格高度，这对陆生动物够用，但水生实体通常
-     * 悬浮在喂食槽上方数格，会永远发现不了脚下的槽位。这里与水平半径保持同一量级，同时不至于让鱼横穿整片水体。
+     * 悬浮在喂食槽上方数格，会永远发现不了脚下的槽位；这里与水平半径保持同一量级，同时不至于让鱼横穿整片水体
      */
     private static final int VERTICAL_SEARCH_RANGE = 4;
 
@@ -32,7 +32,7 @@ public final class FbmTroughSelfFeedGoal extends MoveToBlockGoal {
     private final AnimalFeedingTroughSource source;
 
     /**
-     * 创建 FBM 喂食槽寻路目标。
+     * 创建 FBM 喂食槽寻路目标
      *
      * @param mob 接受目标的可寻路实体
      * @param manager 当前服务器规则管理器
@@ -48,7 +48,7 @@ public final class FbmTroughSelfFeedGoal extends MoveToBlockGoal {
     }
 
     /**
-     * 只允许在逻辑服务端开始方块搜索。
+     * 只允许在逻辑服务端开始方块搜索
      *
      * @return 服务端存在符合当前规则的喂食槽时返回 {@code true}
      */
@@ -57,14 +57,14 @@ public final class FbmTroughSelfFeedGoal extends MoveToBlockGoal {
         return mob.level() instanceof ServerLevel && super.canUse();
     }
 
-    /** 喂食槽允许实体靠近到两格内完成取食。 */
+    /** 喂食槽允许实体靠近到两格内完成取食 */
     @Override
     public double acceptedDistance() {
         return 2.0D;
     }
 
     /**
-     * 判断位置当前是否为包含匹配 FBM 食物的可用喂食槽。
+     * 判断位置当前是否为包含匹配 FBM 食物的可用喂食槽
      *
      * @param level 搜索使用的世界视图
      * @param pos 候选位置
@@ -79,7 +79,7 @@ public final class FbmTroughSelfFeedGoal extends MoveToBlockGoal {
         return !offered.isEmpty() && feedService.canFeed(serverLevel, mob, offered, manager);
     }
 
-    /** 到达目标后提交 Love，并且仅在提交成功时消费容器物品。 */
+    /** 到达目标后再次检查资格，容器成功扣除一个物品后才提交 Love */
     @Override
     public void tick() {
         super.tick();
@@ -89,7 +89,7 @@ public final class FbmTroughSelfFeedGoal extends MoveToBlockGoal {
     }
 
     /**
-     * 尝试从指定目标完成一次喂食；包级入口用于验证扣料顺序。
+     * 尝试从指定目标完成一次喂食；包级入口用于验证扣料顺序
      *
      * @param pos 当前到达的喂食槽位置
      * @return Love 提交且成功从容器移除一个物品时返回 {@code true}

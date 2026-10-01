@@ -1,16 +1,44 @@
 name: Build
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      mod_version: ${{ steps.metadata.outputs.mod_version }}
+      artifact_name: ${{ steps.metadata.outputs.artifact_name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           fetch-tags: true
+
+      - name: Read release metadata
+        id: metadata
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          values = {}
+          for line in Path('gradle.properties').read_text().splitlines():
+              if line.strip() and not line.lstrip().startswith('#') and '=' in line:
+                  key, value = line.split('=', 1)
+                  values[key.strip()] = value.strip()
+          version = values['mod_version']
+          if os.environ['GITHUB_REF_TYPE'] == 'tag':
+              assert os.environ['GITHUB_REF_NAME'] == f'v{version}', 'Tag and mod_version must match'
+          name = f"neoforge-{values['mod_id']}-{version}-mc{values['minecraft_version']}"
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'mod_version={version}\nartifact_name={name}\n')
+          PY
 
       - name: Setup JDK 21
         uses: actions/setup-java@v4
@@ -21,5 +49,57 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build with Gradle
-        run: ./gradlew build
+      - name: Test and build
+        run: ./gradlew test javadoc build
+
+      - name: Collect release artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          ARTIFACT_NAME: ${{ steps.metadata.outputs.artifact_name }}
+        run: |
+          mkdir -p dist
+          cp "build/libs/${ARTIFACT_NAME}.jar" dist/
+          cd dist
+          sha256sum "${ARTIFACT_NAME}.jar" > checksums.txt
+
+      - name: Upload release artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.metadata.outputs.artifact_name }}
+          path: dist/
+          if-no-files-found: error
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout release notes
+        uses: actions/checkout@v4
+
+      - name: Download tested artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact_name }}
+          path: dist
+
+      - name: Verify artifact checksum
+        working-directory: dist
+        run: sha256sum --check checksums.txt
+
+      - name: Publish pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          MOD_VERSION: ${{ needs.build.outputs.mod_version }}
+          ARTIFACT_NAME: ${{ needs.build.outputs.artifact_name }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            --verify-tag \
+            --title "Fish Breeding Manager v${MOD_VERSION}" \
+            --notes-file .github/RELEASE_NOTES.md \
+            --prerelease \
+            "dist/${ARTIFACT_NAME}.jar" dist/checksums.txt

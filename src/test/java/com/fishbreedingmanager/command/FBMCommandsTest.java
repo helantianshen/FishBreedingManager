@@ -25,25 +25,32 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * 验证所有 FBM 管理命令都在根节点严格执行权限等级 {@code 2} 校验。
+ * 验证公开查询与等级 2 写命令的权限边界
  */
 class FBMCommandsTest {
     /**
-     * 无权限来源不能进入 {@code fbm} 根节点，因此任何子命令都不可执行。
+     * 放开根节点后，每个写分支仍独立拒绝普通玩家
      */
     @Test
-    void sourceWithoutPermissionCannotUseFbmTree() {
+    void publicQueriesDoNotExposeWriteBranches() {
         CommandDispatcher<CommandSourceStack> dispatcher = new CommandDispatcher<>();
         dispatcher.register(FBMCommands.build());
         CommandSourceStack source = mock(CommandSourceStack.class);
         when(source.hasPermission(2)).thenReturn(false);
 
-        assertThrows(Exception.class,
-                () -> dispatcher.execute("fbm rule list", source));
+        for (String command : new String[]{"fbm gui", "fbm rule list", "fbm rule show minecraft:cod"}) {
+            var parsed = dispatcher.parse(command, source);
+            assertTrue(parsed.getReader().getRemaining().isEmpty(), command);
+            assertTrue(parsed.getExceptions().isEmpty(), command);
+        }
+        for (String command : new String[]{"fbm reload", "fbm rule set minecraft:cod 0 0 minecraft:kelp",
+                "fbm rule enable minecraft:cod", "fbm rule disable minecraft:cod", "fbm rule remove minecraft:cod"}) {
+            assertThrows(Exception.class, () -> dispatcher.execute(command, source), command);
+        }
     }
 
     /**
-     * 有权限来源应能解析包含多个物品和标签的完整 {@code rule set} 语法。
+     * 有权限来源应能解析包含多个物品和标签的完整 {@code rule set} 语法
      */
     @Test
     void setCommandParsesMultipleFoodEntries() {
@@ -61,10 +68,10 @@ class FBMCommandsTest {
     }
 
     /**
-     * 规则操作的成功反馈必须先把实体 ID 转成翻译组件支持的参数类型。
+     * 规则操作的成功反馈必须先把实体 ID 转成翻译组件支持的参数类型
      *
-     * <p>{@link Component#translatable(String, Object...)} 会在延迟消息真正求值时检查参数类型；
-     * 因此测试主动执行 {@link Supplier#get()}，以覆盖真实客户端中出现异常的边界。
+     * <p>{@link Component#translatable(String, Object...)} 会在延迟消息真正求值时检查参数类型
+     * 因此测试主动执行 {@link Supplier#get()}，以覆盖真实客户端中出现异常的边界
      *
      * @throws Exception 反射访问统一反馈方法失败时抛出
      */

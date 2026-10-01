@@ -6,7 +6,7 @@ import com.mojang.serialization.JsonOps;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 
-/** 为不可变发现快照创建包含嵌套内容与 sibling 的独立 Component 树。 */
+/** 为不可变发现快照创建包含嵌套内容与 sibling 的独立 Component 树 */
 final class ComponentCopies {
     private ComponentCopies() {
     }

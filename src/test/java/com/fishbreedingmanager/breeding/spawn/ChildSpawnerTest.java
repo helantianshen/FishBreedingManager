@@ -30,11 +30,11 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * 验证 {@link ChildSpawner} 明确区分实体类型创建失败、加入世界失败与成功结果。
+ * 验证 {@link ChildSpawner} 明确区分实体类型创建失败、加入世界失败与成功结果
  */
 class ChildSpawnerTest {
     /**
-     * 实体类型无法创建实例时应返回对应失败状态，且结果不能包含后代实体。
+     * 实体类型无法创建实例时应返回对应失败状态，且结果不能包含后代实体
      */
     @Test
     void returnsTypeCreationFailureWhenEntityTypeCreatesNothing() {
@@ -52,7 +52,7 @@ class ChildSpawnerTest {
     }
 
     /**
-     * 已创建后代但 Level 拒绝加入时不能报告成功，同时仍应完成出生位置计算。
+     * 已创建后代但 Level 拒绝加入时不能报告成功，同时仍应完成出生位置计算
      */
     @Test
     void returnsAddFailureWhenLevelRejectsChild() {
@@ -67,7 +67,7 @@ class ChildSpawnerTest {
     }
 
     /**
-     * 后代成功加入世界时应返回该实体，并用规则成长时间标记权威幼体状态。
+     * 后代成功加入世界时应返回该实体，并用规则成长时间标记权威幼体状态
      */
     @Test
     void returnsChildAndMarksJuvenileAfterSuccessfulAdd() {
@@ -83,7 +83,7 @@ class ChildSpawnerTest {
     }
 
     /**
-     * Variant 继承必须发生在后代加入世界之前，使外观随首次实体生成包一起下发到客户端。
+     * Variant 继承必须发生在后代加入世界之前，使外观随首次实体生成包一起下发到客户端
      */
     @Test
     void inheritsVariantBeforeAddingChildToLevel() {
@@ -104,7 +104,7 @@ class ChildSpawnerTest {
     }
 
     /**
-     * 创建带固定父母位置、后代附件和可配置加入结果的测试夹具。
+     * 创建带固定父母位置、后代附件和可配置加入结果的测试夹具
      *
      * @param addResult {@link ServerLevel#addFreshEntity(Entity)} 的返回值
      * @return 完整测试夹具
@@ -126,7 +126,7 @@ class ChildSpawnerTest {
     }
 
     /**
-     * 返回测试使用的合法鳕鱼繁殖规则。
+     * 返回测试使用的合法鳕鱼繁殖规则
      *
      * @return 冷却 600 刻、成长 1200 刻的启用规则
      */
@@ -136,7 +136,7 @@ class ChildSpawnerTest {
                 List.of(), 600, 1200, true);
     }
 
-    /** 测试所需的外部 Minecraft 对象和真实状态对象集合。 */
+    /** 测试所需的外部 Minecraft 对象和真实状态对象集合 */
     private record SpawnFixture(ServerLevel level, Entity first, Entity second,
                                 Entity child, BreedingState childState) {
     }

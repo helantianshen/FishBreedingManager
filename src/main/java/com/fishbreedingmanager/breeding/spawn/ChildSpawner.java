@@ -13,27 +13,27 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * 创建、定位、初始化并把同类型后代加入服务端世界。
+ * 创建、定位、初始化并把同类型后代加入服务端世界
  *
- * <p>该类只处理后代，不修改父母的 {@link BreedingState}。只有返回 {@link ChildSpawnStatus#SUCCESS} 后，调用方才可
- * 提交父母冷却并清除 Love；任何失败都必须保留父母的繁殖机会。
+ * <p>该类只处理后代，不修改父母的 {@link BreedingState}；只有返回 {@link ChildSpawnStatus#SUCCESS} 后，调用方才可
+ * 提交父母冷却并清除 Love；任何失败都必须保留父母的繁殖机会
  *
  * <p>后代在加入世界之前会先尝试通过 {@link VariantInheritance} 随机继承父母一方的 Variant，因此 Variant 随首次
- * 实体生成包一起下发；继承失败只影响外观，不改变生成结果。
+ * 实体生成包一起下发；继承结果不作为加入世界的准入条件
  */
 public final class ChildSpawner {
     private final VariantInheritance variantInheritance;
     private final RandomSource random;
 
     /**
-     * 创建使用真实 Variant 继承通道的后代生成器。
+     * 创建使用真实 Variant 继承通道的后代生成器
      */
     public ChildSpawner() {
         this(new VariantInheritance(), RandomSource.create());
     }
 
     /**
-     * 创建可注入 Variant 继承边界与随机源的生成器，供测试固定捐赠方选择。
+     * 创建可注入 Variant 继承边界与随机源的生成器，供测试固定捐赠方选择
      *
      * @param variantInheritance Variant 继承实现
      * @param random 选择捐赠方使用的随机源
@@ -44,7 +44,7 @@ public final class ChildSpawner {
     }
 
     /**
-     * 尝试在两亲本中点生成与第一亲本相同实体类型的幼体。
+     * 尝试在两亲本中点生成与第一亲本相同实体类型的幼体
      *
      * @param level 后代应加入的服务端 Level
      * @param firstParent 第一亲本，同时提供后代 {@link EntityType}

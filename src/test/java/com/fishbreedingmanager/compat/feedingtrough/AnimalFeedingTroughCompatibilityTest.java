@@ -26,9 +26,9 @@ import net.minecraft.world.entity.ai.goal.GoalSelector;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.animal.Animal;
 
-/** 验证喂食槽 Goal 只对适合且受当前 FBM 规则管理的实体幂等安装。 */
+/** 验证喂食槽 Goal 只对适合且受当前 FBM 规则管理的实体幂等安装 */
 class AnimalFeedingTroughCompatibilityTest {
-    /** 非 PathfinderMob、未初始化管理器和无规则实体都不得触碰 GoalSelector。 */
+    /** 非 PathfinderMob、未初始化管理器和无规则实体都不得触碰 GoalSelector */
     @Test
     void skipsUnsupportedUninitializedAndUnconfiguredEntities() {
         Entity plainEntity = mock(Entity.class);
@@ -50,7 +50,7 @@ class AnimalFeedingTroughCompatibilityTest {
         verifyNoInteractions(selector);
     }
 
-    /** 单个异常第三方实体不得中断其余实体的规则发布后刷新。 */
+    /** 单个异常第三方实体不得中断其余实体的规则发布后刷新 */
     @Test
     void containsPerEntityInstallationFailure() {
         PathfinderMob mob = mock(PathfinderMob.class);
@@ -61,7 +61,7 @@ class AnimalFeedingTroughCompatibilityTest {
                 mob, manager, true));
     }
 
-    /** 已加载喂食槽且规则启用的非 Animal PathfinderMob 应安装一次目标。 */
+    /** 已加载喂食槽且规则启用的非 Animal PathfinderMob 应安装一次目标 */
     @Test
     void installsGoalForEnabledNonAnimalPathfinderMob() {
         PathfinderMob mob = mock(PathfinderMob.class);
@@ -83,7 +83,7 @@ class AnimalFeedingTroughCompatibilityTest {
                 isA(FbmTroughSelfFeedGoal.class));
     }
 
-    /** 已有 FBM 喂食槽目标时，规则刷新不得重复添加。 */
+    /** 已有 FBM 喂食槽目标时，规则刷新不得重复添加 */
     @Test
     void doesNotInstallDuplicateGoal() {
         PathfinderMob mob = mock(PathfinderMob.class);
@@ -108,7 +108,7 @@ class AnimalFeedingTroughCompatibilityTest {
                 existing);
     }
 
-    /** 未加载喂食槽或规则禁用时不得安装目标。 */
+    /** 未加载喂食槽或规则禁用时不得安装目标 */
     @Test
     void skipsWhenModIsAbsentOrRuleIsDisabled() {
         PathfinderMob mob = mock(PathfinderMob.class);
@@ -129,7 +129,7 @@ class AnimalFeedingTroughCompatibilityTest {
         verifyNoInteractions(selector);
     }
 
-    /** Animal 必须保留给上游喂食槽实现，防止同一实体双重扣料。 */
+    /** Animal 必须保留给上游喂食槽实现，防止同一实体双重扣料 */
     @Test
     void excludesVanillaAnimalHierarchy() {
         Animal animal = mock(Animal.class);

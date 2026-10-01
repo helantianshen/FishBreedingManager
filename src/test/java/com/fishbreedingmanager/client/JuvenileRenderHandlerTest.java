@@ -16,17 +16,17 @@ import net.neoforged.bus.api.SubscribeEvent;
 import static org.mockito.Mockito.mock;
 
 /**
- * 验证幼体渲染矩阵只在事件链最低优先级压栈，并按真实压栈记录精确恢复。
+ * 验证幼体渲染矩阵只在事件链最低优先级压栈，并按真实压栈记录精确恢复
  */
 class JuvenileRenderHandlerTest {
-    /** 每个测试后清理当前测试线程的渲染记录。 */
+    /** 每个测试后清理当前测试线程的渲染记录 */
     @AfterEach
     void clearTracking() {
         JuvenileRenderHandler.clearTrackedPushes();
     }
 
     /**
-     * Pre 处理器必须在最低优先级运行，尽量确保其他 Mod 的取消决定先完成。
+     * Pre 处理器必须在最低优先级运行，尽量确保其他 Mod 的取消决定先完成
      */
     @Test
     void preHandlerRunsAtLowestPriority() throws NoSuchMethodException {
@@ -40,7 +40,7 @@ class JuvenileRenderHandlerTest {
     }
 
     /**
-     * Post 处理器必须与 Pre 侧镜像：最后压栈就必须最先弹栈，否则会弹掉其他 Mod 的矩阵。
+     * Post 处理器必须与 Pre 侧镜像：最后压栈就必须最先弹栈，否则会弹掉其他 Mod 的矩阵
      */
     @Test
     void postHandlerRunsAtHighestPriorityToMirrorPre() throws NoSuchMethodException {
@@ -54,7 +54,7 @@ class JuvenileRenderHandlerTest {
     }
 
     /**
-     * Post 只能消费一次真实 Pre 压栈记录，不能通过重新计算缩放猜测是否需要弹栈。
+     * Post 只能消费一次真实 Pre 压栈记录，不能通过重新计算缩放猜测是否需要弹栈
      */
     @Test
     void consumesOnlyActuallyTrackedPush() {

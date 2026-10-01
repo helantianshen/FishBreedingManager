@@ -11,7 +11,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.MobCategory;
 import org.junit.jupiter.api.Test;
 
-/** 验证通用发现引擎的信号合并、置信度和来源分组语义。 */
+/** 验证通用发现引擎的信号合并、置信度和来源分组语义 */
 class FishDiscoveryEngineTest {
     private final FishDiscoveryEngine engine = new FishDiscoveryEngine();
 

@@ -11,7 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
 
-/** 验证真实运行日志所需的来源摘要稳定、通用且不会把 LOW 候选误报为可适配鱼类。 */
+/** 验证真实运行日志所需的来源摘要稳定、通用且不会把 LOW 候选误报为可适配鱼类 */
 class DiscoveryDiagnosticsTest {
     @Test
     void summarizesStrongCandidatesBySourceAndExcludesLowOnlySources() {

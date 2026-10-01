@@ -1,10 +1,10 @@
-### Gradle ###
+# Gradle 本地缓存与构建产物
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/**/build/
 
-### IntelliJ IDEA ###
+# IDEA 本地工程与运行配置
 .idea/
 *.iws
 *.iml
@@ -14,7 +14,7 @@ out/
 
 .run/
 
-### Eclipse ###
+# Eclipse 本地工程与输出目录
 .apt_generated
 .classpath
 .eclipse/
@@ -26,13 +26,13 @@ out/
 bin/
 !**/src/**/bin/
 
-### VS Code ###
+# VS Code 工作区配置
 .vscode/
 
-### Mac OS ###
+# macOS 文件管理器元数据
 .DS_Store
 
-### Minecraft Modding ###
+# 开发存档、数据生成缓存与本地发布目录
 run/
 !**/src/**/run/
 **/src/generated/**/.cache/

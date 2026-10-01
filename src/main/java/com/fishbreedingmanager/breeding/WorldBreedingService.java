@@ -4,21 +4,25 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import com.fishbreedingmanager.FishBreedingManager;
 import com.fishbreedingmanager.compat.CompatibilityCoordinator;
 import com.fishbreedingmanager.persistence.WorldBreedingData;
+import com.fishbreedingmanager.discovery.FishDiscoveryManager;
+import com.fishbreedingmanager.discovery.DiscoverySnapshot;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * 协调世界持久化规则与运行时快照的事务式应用服务。
+ * 协调世界持久化规则与运行时快照的事务式应用服务
  *
- * <p>每次修改先复制当前完整规则集合，在副本上应用变更并通过 {@link RuleValidator#validateAll} 校验候选全集。
+ * <p>每次修改先复制当前完整规则集合，在副本上应用变更并通过 {@link RuleValidator#validateAll} 校验候选全集
  * 只有全部规则有效时，才依次替换 {@link WorldBreedingData} 与 {@link BreedingRuleManager} 快照；校验失败不会污染
- * 任一当前有效状态。所有生产入口都以 {@link MinecraftServer} 定位当前存档，包级重载仅供同包测试验证事务边界。
+ * 任一当前有效状态；所有生产入口都以 {@link MinecraftServer} 定位当前存档，包级重载仅供同包测试验证事务边界
  */
 public final class WorldBreedingService {
     private static final WorldBreedingService INSTANCE =
@@ -30,7 +34,7 @@ public final class WorldBreedingService {
     private final Consumer<MinecraftServer> compatibilityRefresher;
 
     /**
-     * 创建服务并注入规则校验器。
+     * 创建服务并注入规则校验器
      *
      * @param validator 提交前使用的完整规则校验器
      */
@@ -39,7 +43,7 @@ public final class WorldBreedingService {
     }
 
     /**
-     * 创建服务并注入校验器与规则发布后的可选兼容刷新边界。
+     * 创建服务并注入校验器与规则发布后的可选兼容刷新边界
      *
      * @param validator 提交前使用的完整规则校验器
      * @param compatibilityRefresher 成功发布 Snapshot 后执行的 best-effort 兼容刷新
@@ -51,7 +55,7 @@ public final class WorldBreedingService {
     }
 
     /**
-     * 返回生产环境共享服务实例。
+     * 返回生产环境共享服务实例
      *
      * @return 世界规则应用服务
      */
@@ -60,9 +64,9 @@ public final class WorldBreedingService {
     }
 
     /**
-     * 从当前世界存档重新构建并安装运行时快照。
+     * 从当前世界存档重新构建并安装运行时快照
      *
-     * <p>持久化内容会先完整校验；任何错误或运行时异常都会保留旧快照并返回失败信息。
+     * <p>持久化内容会先完整校验；任何错误或运行时异常都会保留旧快照并返回失败信息
      *
      * @param server 当前 Minecraft 服务端
      * @return 重载结果及成功安装的规则数，或失败原因
@@ -71,6 +75,7 @@ public final class WorldBreedingService {
         try {
             WorldBreedingData data = WorldBreedingData.get(server);
             BreedingRuleManager manager = BreedingRuleManager.get(server);
+            manager.rememberStored(data.buildSnapshot());
             RuleValidationResult validation = validator.validateAll(data.allRules());
             if (!validation.valid()) {
                 return ReloadResult.failure(String.join("; ", validation.errors()));
@@ -89,7 +94,7 @@ public final class WorldBreedingService {
     }
 
     /**
-     * 新增或整体替换一条实体繁殖规则。
+     * 新增或整体替换一条实体繁殖规则
      *
      * @param server 当前 Minecraft 服务端
      * @param rule 待写入的候选规则
@@ -105,7 +110,7 @@ public final class WorldBreedingService {
     }
 
     /**
-     * 使用已提供的数据容器执行新增或替换，供事务测试复用。
+     * 使用已提供的数据容器执行新增或替换，供事务测试复用
      *
      * @param data 当前世界持久化数据
      * @param manager 当前服务器运行时管理器
@@ -120,7 +125,7 @@ public final class WorldBreedingService {
     }
 
     /**
-     * 删除指定实体的繁殖规则。
+     * 删除指定实体的繁殖规则
      *
      * @param server 当前 Minecraft 服务端
      * @param entityId 待删除规则的实体注册表 ID
@@ -131,7 +136,43 @@ public final class WorldBreedingService {
     }
 
     /**
-     * 使用已提供的数据容器执行删除，供事务测试复用。
+     * 先构建发现视图，再原子发布手动导入集合及可选的关联规则删除
+     *
+     * @param server 逻辑服务器
+     * @param entityId 目标实体ID
+     * @param add 添加导入标记
+     * @param deleteRule 删除关联规则标记
+     * @return 事务提交结果
+     */
+    public RuleUpdateResult changeImport(MinecraftServer server, ResourceLocation entityId,
+                                        boolean add, boolean deleteRule) {
+        WorldBreedingData data = WorldBreedingData.get(server);
+        BreedingRuleManager manager = BreedingRuleManager.get(server);
+        return changeImport(data, manager, FishDiscoveryManager.get(server), entityId, add, deleteRule);
+    }
+
+    /** 用已初始化容器执行同一导入事务，构建失败不会污染权威状态 */
+    RuleUpdateResult changeImport(WorldBreedingData data, BreedingRuleManager manager,
+                                 FishDiscoveryManager discovery, ResourceLocation entityId,
+                                 boolean add, boolean deleteRule) {
+        Set<ResourceLocation> imports = new LinkedHashSet<>(data.getImportedEntities());
+        if (!(add ? imports.add(entityId) : imports.remove(entityId))) {
+            return RuleUpdateResult.failure(List.of(add ? "Already imported" : "Not manually imported"));
+        }
+        Map<ResourceLocation, BreedingRule> candidate = copyRules(data);
+        if (!add && deleteRule) candidate.remove(entityId);
+        RuleValidationResult validation = validator.validateAll(candidate.values());
+        if (!validation.valid()) return RuleUpdateResult.failure(validation.errors());
+        DiscoverySnapshot nextDiscovery = discovery.prepare(imports);
+        BreedingRuleSnapshot next = new BreedingRuleSnapshot(Map.copyOf(candidate), Set.copyOf(imports));
+        data.replaceManagement(candidate.values(), imports);
+        discovery.install(nextDiscovery);
+        manager.install(next);
+        return RuleUpdateResult.success(candidate.size());
+    }
+
+    /**
+     * 使用已提供的数据容器执行删除，供事务测试复用
      *
      * @param data 当前世界持久化数据
      * @param manager 当前服务器运行时管理器
@@ -148,7 +189,7 @@ public final class WorldBreedingService {
     }
 
     /**
-     * 设置指定规则的启用状态，同时保持其余配置字段不变。
+     * 设置指定规则的启用状态，同时保持其余配置字段不变
      *
      * @param server 当前 Minecraft 服务端
      * @param entityId 目标实体注册表 ID
@@ -166,7 +207,7 @@ public final class WorldBreedingService {
     }
 
     /**
-     * 使用已提供的数据容器更新启用状态，供事务测试复用。
+     * 使用已提供的数据容器更新启用状态，供事务测试复用
      *
      * @param data 当前世界持久化数据
      * @param manager 当前服务器运行时管理器
@@ -192,7 +233,7 @@ public final class WorldBreedingService {
     }
 
     /**
-     * 按实体注册表 ID 排序列出当前生效规则。
+     * 按实体注册表 ID 排序列出当前生效规则
      *
      * @param server 当前 Minecraft 服务端
      * @return 不可修改语义的已排序规则列表
@@ -204,7 +245,7 @@ public final class WorldBreedingService {
     }
 
     /**
-     * 校验并提交完整候选集合。
+     * 校验并提交完整候选集合
      *
      * @param data 当前世界持久化数据
      * @param manager 当前服务器运行时管理器
@@ -226,7 +267,7 @@ public final class WorldBreedingService {
     }
 
     /**
-     * 按当前持久化顺序复制全部规则，供候选集合安全修改。
+     * 按当前持久化顺序复制全部规则，供候选集合安全修改
      *
      * @param data 当前世界持久化数据
      * @return 与当前规则内容相同的可修改映射
@@ -240,10 +281,10 @@ public final class WorldBreedingService {
     }
 
     /**
-     * 隔离规则提交后的可选兼容刷新。
+     * 隔离规则提交后的可选兼容刷新
      *
      * <p>规则数据和运行时 Snapshot 在调用前已经成功提交，因此任何第三方实体或 Goal 异常只能记录，不能让命令
-     * 返回失败或让启动流程误称旧快照仍被保留。
+     * 返回失败或让启动流程误称旧快照仍被保留
      *
      * @param server 已成功发布规则的当前服务器
      */

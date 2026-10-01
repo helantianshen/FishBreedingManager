@@ -19,11 +19,11 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
-/** 验证喂食槽适配只依赖方块 Registry ID 与原版 Container 契约。 */
+/** 验证喂食槽适配只依赖方块 Registry ID 与原版 Container 契约 */
 class AnimalFeedingTroughSourceTest {
     private static final BlockPos POS = new BlockPos(2, 3, 4);
 
-    /** 正确方块 ID 且方块实体实现 Container 时应暴露槽位 0。 */
+    /** 正确方块 ID 且方块实体实现 Container 时应暴露槽位 0 */
     @Test
     void readsSlotZeroFromMatchingContainerBlockEntity() {
         AnimalFeedingTroughSource source = chestBackedSource();
@@ -42,7 +42,7 @@ class AnimalFeedingTroughSourceTest {
         assertSame(stack, source.peek(level, POS));
     }
 
-    /** Registry ID 不匹配时不得探测或修改碰巧实现 Container 的其他方块实体。 */
+    /** Registry ID 不匹配时不得探测或修改碰巧实现 Container 的其他方块实体 */
     @Test
     void rejectsDifferentBlockBeforeReadingInventory() {
         AnimalFeedingTroughSource source = chestBackedSource();
@@ -59,7 +59,7 @@ class AnimalFeedingTroughSourceTest {
         verify(container, never()).getItem(0);
     }
 
-    /** 成功消费应通过 Container API 精确移除槽位 0 的一个物品。 */
+    /** 成功消费应通过 Container API 精确移除槽位 0 的一个物品 */
     @Test
     void consumesExactlyOneItemThroughContainerApi() {
         AnimalFeedingTroughSource source = chestBackedSource();

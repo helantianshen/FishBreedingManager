@@ -17,7 +17,7 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.EntityType;
 import net.neoforged.fml.ModList;
 
-/** 将当前 Minecraft/NeoForge 运行环境转换为加载器无关的发现输入。 */
+/** 将当前 Minecraft/NeoForge 运行环境转换为加载器无关的发现输入 */
 public final class MinecraftDiscoverySource {
     private static final TagKey<EntityType<?>> COMMON_FISH = TagKey.create(
             Registries.ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath("c", "fish"));
@@ -31,12 +31,12 @@ public final class MinecraftDiscoverySource {
             ResourceLocation.withDefaultNamespace("tropical_fish"),
             ResourceLocation.withDefaultNamespace("pufferfish"));
 
-    /** 创建无状态 Minecraft/NeoForge 发现输入适配器。 */
+    /** 创建无状态 Minecraft/NeoForge 发现输入适配器 */
     public MinecraftDiscoverySource() {
     }
 
     /**
-     * 捕获完整 EntityType Registry。该过程只读类型元数据和 Holder Tag，不调用实体工厂。
+     * 捕获完整 EntityType Registry；该过程只读类型元数据和 Holder Tag，不调用实体工厂
      *
      * @return 按 EntityType ID 稳定排序的完整 Registry 描述
      */
@@ -73,7 +73,7 @@ public final class MinecraftDiscoverySource {
     }
 
     /**
-     * 读取已加载 Mod 的显示名和版本，并按 Mod ID 稳定排序去重。
+     * 读取已加载 Mod 的显示名和版本，并按 Mod ID 稳定排序去重
      *
      * @return 与 ModList 类型解耦的稳定元数据列表
      */

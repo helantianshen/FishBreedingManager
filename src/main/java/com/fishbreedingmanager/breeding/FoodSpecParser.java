@@ -6,20 +6,20 @@ import java.util.List;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * 解析管理员命令中的逗号分隔繁殖食物表达式。
+ * 解析管理员命令中的逗号分隔繁殖食物表达式
  *
- * <p>普通条目表示物品注册表 ID，例如 {@code minecraft:kelp}；以 {@code #} 开头的条目表示物品标签，
- * 例如 {@code #minecraft:planks}。本类只负责语法解析，ID 是否真实存在由 {@link RuleValidator} 统一校验。
+ * <p>普通条目表示物品注册表 ID，例如 {@code minecraft:kelp}；以 {@code #} 开头的条目表示物品标签
+ * 例如 {@code #minecraft:planks}；本类只负责语法解析，ID 是否真实存在由 {@link RuleValidator} 统一校验
  */
 public final class FoodSpecParser {
     private FoodSpecParser() {
     }
 
     /**
-     * 将逗号分隔的食物表达式解析为物品与标签两组资源 ID。
+     * 将逗号分隔的食物表达式解析为物品与标签两组资源 ID
      *
-     * <p>条目前后的空白会被忽略，但列表中的空项、只有 {@code #} 的空标签和非法资源 ID 都会被拒绝，
-     * 从而避免命令看似执行成功却产生不可触发的规则。
+     * <p>条目前后的空白会被忽略，但列表中的空项、只有 {@code #} 的空标签和非法资源 ID 都会被拒绝
+     * 从而避免命令看似执行成功却产生不可触发的规则
      *
      * @param input 用户提供的逗号分隔表达式
      * @return 保持各自输入顺序的不可变解析结果

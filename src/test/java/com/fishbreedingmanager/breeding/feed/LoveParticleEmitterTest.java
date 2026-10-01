@@ -13,11 +13,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
 /**
- * 验证 FBM 爱心反馈通过服务端粒子 API 同步，不依赖目标实体处理 {@code Animal} 专用事件。
+ * 验证 FBM 爱心反馈通过服务端粒子 API 同步，不依赖目标实体处理 {@code Animal} 专用事件
  */
 class LoveParticleEmitterTest {
     /**
-     * 爱心应生成在实体上方，并使用固定数量与散布范围发送给附近客户端。
+     * 爱心应生成在实体上方，并使用固定数量与散布范围发送给附近客户端
      */
     @Test
     void emitsHeartParticlesAboveEntityThroughServerLevel() {

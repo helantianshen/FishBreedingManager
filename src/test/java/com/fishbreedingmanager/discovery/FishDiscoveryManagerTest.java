@@ -15,7 +15,7 @@ import net.minecraft.server.MinecraftServer;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-/** 验证发现快照只在完整构建成功后原子发布。 */
+/** 验证发现快照只在完整构建成功后原子发布 */
 class FishDiscoveryManagerTest {
     @Test
     void replacesOnlyAfterSuccessfulCompleteBuild() {

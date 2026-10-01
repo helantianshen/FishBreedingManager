@@ -7,7 +7,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * 自动发现输出中的单个实体候选；不持有第三方实体实例或繁殖规则。
+ * 自动发现输出中的单个实体候选；不持有第三方实体实例或繁殖规则
  *
  * @param entityTypeId 稳定 EntityType Registry ID
  * @param displayName 可本地化的实体显示组件
@@ -26,7 +26,7 @@ public record CandidateEntity(
         CompatibilityLevel compatibility,
         Set<CandidateReason> reasons
 ) {
-    /** 校验字段并防御性复制组件树与理由集合。 */
+    /** 校验字段并防御性复制组件树与理由集合 */
     public CandidateEntity {
         Objects.requireNonNull(entityTypeId, "entityTypeId");
         Objects.requireNonNull(displayName, "displayName");
@@ -40,7 +40,7 @@ public record CandidateEntity(
     }
 
     /**
-     * 返回实体显示组件。
+     * 返回实体显示组件
      *
      * @return 与内部状态隔离的实体显示组件副本
      */
@@ -50,7 +50,7 @@ public record CandidateEntity(
     }
 
     /**
-     * 返回来源 Mod 显示组件。
+     * 返回来源 Mod 显示组件
      *
      * @return 与内部状态隔离的来源显示组件副本
      */

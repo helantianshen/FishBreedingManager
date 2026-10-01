@@ -9,7 +9,7 @@ import java.util.Set;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
 
-/** 验证 Minecraft/NeoForge 边界能只读捕获已注册实体描述。 */
+/** 验证 Minecraft/NeoForge 边界能只读捕获已注册实体描述 */
 class MinecraftDiscoverySourceTest {
     @Test
     void capturesVanillaCodFromCompleteRegistry() {

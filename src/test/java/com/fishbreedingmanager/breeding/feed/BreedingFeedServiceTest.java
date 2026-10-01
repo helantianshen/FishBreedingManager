@@ -26,9 +26,9 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemStack;
 
-/** 验证所有喂食入口共享同一套服务端 FBM Love 状态转换。 */
+/** 验证所有喂食入口共享同一套服务端 FBM Love 状态转换 */
 class BreedingFeedServiceTest {
-    /** 无规则与禁用规则应返回可诊断原因，并且都不创建实体状态。 */
+    /** 无规则与禁用规则应返回可诊断原因，并且都不创建实体状态 */
     @Test
     void distinguishesMissingAndDisabledRulesBeforeCreatingState() {
         ServerLevel level = mock(ServerLevel.class);
@@ -52,7 +52,7 @@ class BreedingFeedServiceTest {
         verify(target, never()).getData(ModAttachments.BREEDING_STATE);
     }
 
-    /** 冷却与幼体都必须经统一服务拒绝，且不登记 Love 副作用。 */
+    /** 冷却与幼体都必须经统一服务拒绝，且不登记 Love 副作用 */
     @Test
     void rejectsCooldownAndJuvenileStates() {
         ServerLevel level = mock(ServerLevel.class);
@@ -85,7 +85,7 @@ class BreedingFeedServiceTest {
                 service.tryFeed(level, juvenileTarget, offered, manager));
     }
 
-    /** 首次成功后第二个 tick 的重复尝试不得再次调用来源扣料。 */
+    /** 首次成功后第二个 tick 的重复尝试不得再次调用来源扣料 */
     @Test
     void consumesExternalSourceOnlyOnFirstSuccessfulAttempt() {
         ServerLevel level = mock(ServerLevel.class);
@@ -117,7 +117,7 @@ class BreedingFeedServiceTest {
         assertEquals(1, consumptions.get());
     }
 
-    /** 自动来源扣料失败时不得先写 Love，避免产生免费喂食。 */
+    /** 自动来源扣料失败时不得先写 Love，避免产生免费喂食 */
     @Test
     void leavesLoveUntouchedWhenSourceConsumptionFails() {
         ServerLevel level = mock(ServerLevel.class);
@@ -149,7 +149,7 @@ class BreedingFeedServiceTest {
         assertEquals(List.of(), emitted);
     }
 
-    /** 目标搜索阶段应能只读判断当前规则和状态，而不提前进入 Love。 */
+    /** 目标搜索阶段应能只读判断当前规则和状态，而不提前进入 Love */
     @Test
     void reportsEligibilityWithoutEnteringLove() {
         ServerLevel level = mock(ServerLevel.class);
@@ -175,7 +175,7 @@ class BreedingFeedServiceTest {
         assertEquals(0L, state.getLoveUntil());
     }
 
-    /** 成功转换应写 Love、登记索引和粒子，但把扣料责任留给调用方。 */
+    /** 成功转换应写 Love、登记索引和粒子，但把扣料责任留给调用方 */
     @Test
     void entersLoveWithoutConsumingTheSourceStack() {
         ServerLevel level = mock(ServerLevel.class);
@@ -209,7 +209,7 @@ class BreedingFeedServiceTest {
         verify(offered, never()).shrink(1);
     }
 
-    /** 错误食物必须在创建实体 Attachment 之前被拒绝。 */
+    /** 错误食物必须在创建实体 Attachment 之前被拒绝 */
     @Test
     void rejectsWrongFoodWithoutCreatingState() {
         ServerLevel level = mock(ServerLevel.class);
@@ -233,7 +233,7 @@ class BreedingFeedServiceTest {
         verify(target, never()).getData(ModAttachments.BREEDING_STATE);
     }
 
-    /** 已经 Love 的实体不得重新进入 Love，也不得重复登记或发粒子。 */
+    /** 已经 Love 的实体不得重新进入 Love，也不得重复登记或发粒子 */
     @Test
     void rejectsEntityThatCannotEnterLove() {
         ServerLevel level = mock(ServerLevel.class);

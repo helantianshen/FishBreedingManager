@@ -12,24 +12,24 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * 服务端到客户端的幼体状态通知，声明某个实体将在指定绝对游戏刻成年。
+ * 服务端到客户端的幼体状态通知，声明某个实体将在指定绝对游戏刻成年
  *
- * <p>NeoForge 1.21.1 不会自动把实体数据附件同步到客户端，因此服务端在子代生成及玩家开始追踪实体时发送本包。
+ * <p>NeoForge 1.21.1 不会自动把实体数据附件同步到客户端，因此服务端在子代生成及玩家开始追踪实体时发送本包
  * 客户端只需要 {@code entityUuid → adultAt} 即可实现成年前固定 {@code 0.5F}、成年时瞬间恢复 {@code 1.0F}
- * 的视觉效果，不发送可由客户端误解为平滑成长依据的冗余时长。
+ * 的视觉效果，不发送可由客户端误解为平滑成长依据的冗余时长
  *
  * @param entityUuid 幼体实体的稳定 UUID
  * @param adultAt 实体成年的绝对游戏刻
  */
 public record JuvenileStatePayload(UUID entityUuid, long adultAt) implements CustomPacketPayload {
-    /** 本数据包在 FBM 命名空间中的网络类型标识。 */
+    /** 本数据包在 FBM 命名空间中的网络类型标识 */
     public static final CustomPacketPayload.Type<JuvenileStatePayload> TYPE =
             new CustomPacketPayload.Type<>(ResourceLocation.fromNamespaceAndPath(FishBreedingManager.MOD_ID, "juvenile_state"));
 
     /**
-     * 数据包二进制编解码器。
+     * 数据包二进制编解码器
      *
-     * <p>UUID 使用字符串编码以避开小版本间 UUID 辅助编解码 API 的差异，成年时刻使用变长长整数降低常见数据大小。
+     * <p>线上格式依次为 UUID 字符串与变长长整数成年时刻；收发两端必须使用相同字段顺序与编码
      */
     public static final StreamCodec<RegistryFriendlyByteBuf, JuvenileStatePayload> STREAM_CODEC =
             StreamCodec.composite(
@@ -38,7 +38,7 @@ public record JuvenileStatePayload(UUID entityUuid, long adultAt) implements Cus
                     JuvenileStatePayload::fromStream);
 
     /**
-     * 从服务端权威附件状态创建数据包。
+     * 从服务端权威附件状态创建数据包
      *
      * @param entityUuid 幼体实体 UUID
      * @param state 实体当前的 {@link BreedingState}
@@ -49,7 +49,7 @@ public record JuvenileStatePayload(UUID entityUuid, long adultAt) implements Cus
     }
 
     /**
-     * 返回 NeoForge 用于路由本 Payload 的类型标识。
+     * 返回 NeoForge 用于路由本 Payload 的类型标识
      *
      * @return {@link #TYPE} 单例
      */

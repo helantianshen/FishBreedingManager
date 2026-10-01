@@ -18,9 +18,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
-/** 验证统一喂食服务结果在玩家入口保持原有扣料与事件传播语义。 */
+/** 验证统一喂食服务结果在玩家入口保持原有扣料与事件传播语义 */
 class EntityInteractionHandlerTest {
-    /** 普通玩家成功喂食只扣一个物品并消费后续实体交互。 */
+    /** 普通玩家成功喂食只扣一个物品并消费后续实体交互 */
     @Test
     void consumesOneItemAndCancelsEventAfterSuccessfulFeed() {
         PlayerInteractEvent.EntityInteract event = mock(PlayerInteractEvent.EntityInteract.class);
@@ -36,7 +36,7 @@ class EntityInteractionHandlerTest {
         verify(event).setCanceled(true);
     }
 
-    /** 创造模式成功喂食仍消费事件，但不得减少手持物。 */
+    /** 创造模式成功喂食仍消费事件，但不得减少手持物 */
     @Test
     void preservesCreativeStackWhileCancellingSuccessfulInteraction() {
         PlayerInteractEvent.EntityInteract event = mock(PlayerInteractEvent.EntityInteract.class);
@@ -54,7 +54,7 @@ class EntityInteractionHandlerTest {
         verify(event).setCanceled(true);
     }
 
-    /** 任意拒绝结果必须保持物品和事件不变，让原版或其他 Mod 继续处理。 */
+    /** 任意拒绝结果必须保持物品和事件不变，让原版或其他 Mod 继续处理 */
     @Test
     void leavesRejectedInteractionUntouched() {
         PlayerInteractEvent.EntityInteract event = mock(PlayerInteractEvent.EntityInteract.class);

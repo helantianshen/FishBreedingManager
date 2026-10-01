@@ -19,10 +19,10 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * 验证按存档保存的规则与导入实体在 NBT 边界上的往返一致性与容错行为。
+ * 验证按存档保存的规则与导入实体在 NBT 边界上的往返一致性与容错行为
  *
- * <p>这是玩家全部 FBM 配置的唯一持久化路径，因此除了正常往返，还必须锁定两条边界：
- * 单条损坏记录不能阻止整个存档加载；已存在的数据文件不能在加载时被重新种入默认规则。
+ * <p>这是玩家全部 FBM 配置的唯一持久化路径，因此除了正常往返，还必须锁定两条边界
+ * 单条损坏记录不能阻止整个存档加载；已存在的数据文件不能在加载时被重新种入默认规则
  */
 class WorldBreedingDataTest {
     private static final ResourceLocation COD = ResourceLocation.parse("minecraft:cod");
@@ -33,7 +33,7 @@ class WorldBreedingDataTest {
     private static final ResourceLocation IMPORTED = ResourceLocation.parse("weirdfishmod:moonfish");
 
     /**
-     * 全部规则字段、食物 Tag、启用状态、导入集合和持久化顺序都必须完整往返。
+     * 全部规则字段、食物 Tag、启用状态、导入集合和持久化顺序都必须完整往返
      */
     @Test
     void savesAndLoadsEveryRuleFieldAndImportedEntity() {
@@ -55,7 +55,7 @@ class WorldBreedingDataTest {
     }
 
     /**
-     * 往返后构建的运行时快照必须与原始工作集等价，保证重载路径不引入语义漂移。
+     * 往返后构建的运行时快照必须与原始工作集等价，保证重载路径不引入语义漂移
      */
     @Test
     void restoredSnapshotMatchesOriginalWorkingSet() {
@@ -71,7 +71,7 @@ class WorldBreedingDataTest {
     }
 
     /**
-     * 空数据必须往返为空，加载器不得在已有数据文件上重新种入默认原版鱼规则。
+     * 空数据必须往返为空，加载器不得在已有数据文件上重新种入默认原版鱼规则
      */
     @Test
     void loadDoesNotReseedDefaultRules() {
@@ -82,7 +82,7 @@ class WorldBreedingDataTest {
     }
 
     /**
-     * 非法实体 ID、非法食物 ID 和非法导入 ID 只能被逐条跳过，不能让整个存档加载失败。
+     * 非法实体 ID、非法食物 ID 和非法导入 ID 只能被逐条跳过，不能让整个存档加载失败
      */
     @Test
     void skipsMalformedEntriesWithoutFailingTheWholeLoad() {
@@ -105,7 +105,7 @@ class WorldBreedingDataTest {
     }
 
     /**
-     * 完全缺失的字段必须按空集合处理，而不是抛出异常。
+     * 完全缺失的字段必须按空集合处理，而不是抛出异常
      */
     @Test
     void loadsEmptyTagAsEmptyData() {

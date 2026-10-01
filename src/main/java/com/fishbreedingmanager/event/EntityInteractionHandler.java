@@ -17,9 +17,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
 /**
- * 服务端喂食交互处理器：玩家用当前规则食物右键实体时，使其进入 FBM Love。
+ * 服务端喂食交互处理器：玩家用当前规则食物右键实体时，使其进入 FBM Love
  *
- * <p>规则与状态转换委托给 {@link BreedingFeedService}，本类只负责玩家物品和交互事件语义。
+ * <p>规则与状态转换委托给 {@link BreedingFeedService}，本类只负责玩家物品和交互事件语义
  */
 @EventBusSubscriber(modid = FishBreedingManager.MOD_ID)
 public final class EntityInteractionHandler {
@@ -27,10 +27,10 @@ public final class EntityInteractionHandler {
     }
 
     /**
-     * 在逻辑服务端处理实体右键喂食并决定是否消费原交互。
+     * 在逻辑服务端处理实体右键喂食并决定是否消费原交互
      *
-     * <p>没有 FBM 规则、规则禁用或手持物不匹配时直接返回，不取消事件，允许原版和其他 Mod 继续处理。仅当 FBM
-     * 实际使实体进入 Love 后才消耗一个物品、播放爱心并取消后续处理。
+     * <p>没有 FBM 规则、规则禁用或手持物不匹配时直接返回，不取消事件，允许原版和其他 Mod 继续处理；仅当 FBM
+     * 实际使实体进入 Love 后才消耗一个物品、播放爱心并取消后续处理
      *
      * @param event NeoForge 玩家右键实体事件
      */
@@ -61,10 +61,10 @@ public final class EntityInteractionHandler {
     }
 
     /**
-     * 把统一喂食结果映射为玩家物品与 NeoForge 事件语义。
+     * 把统一喂食结果映射为玩家物品与 NeoForge 事件语义
      *
-     * <p>只有 {@link BreedingFeedService.FeedResult#FED} 会消费交互；普通玩家缩减一个物品，创造模式玩家保留物品。
-     * 所有拒绝结果保持事件不变，使原版或其他 Mod 能继续处理。
+     * <p>只有 {@link BreedingFeedService.FeedResult#FED} 会消费交互；普通玩家缩减一个物品，创造模式玩家保留物品
+     * 所有拒绝结果保持事件不变，使原版或其他 Mod 能继续处理
      *
      * @param event 当前玩家实体交互事件
      * @param player 发起交互的玩家

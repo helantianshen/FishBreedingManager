@@ -6,14 +6,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-/** 为日志和后续诊断命令生成稳定、无第三方 Mod 特例的发现来源摘要。 */
+/** 为启动与重载日志生成稳定的发现来源摘要，不对具体模组采用特殊判定 */
 public final class DiscoveryDiagnostics {
     private DiscoveryDiagnostics() {
     }
 
     /**
-     * 输出至少包含一个 HIGH 或 MEDIUM 候选的来源。LOW 项仍保留在完整发现快照中，
-     * 但不会被诊断误报为自动识别的可适配鱼类。
+     * 输出至少包含一个 HIGH 或 MEDIUM 候选的来源；LOW 项仍保留在完整发现快照中
+     * 但不会被诊断误报为自动识别的可适配鱼类
      *
      * @param snapshot 最近一次成功发布的发现快照
      * @return 按来源和实体 Registry ID 稳定排序的日志正文

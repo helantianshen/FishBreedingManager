@@ -14,7 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.MobCategory;
 
-/** 将加载器无关的 Registry 描述转换为带理由和置信度的候选快照。 */
+/** 将加载器无关的 Registry 描述转换为带理由和置信度的候选快照 */
 public final class FishDiscoveryEngine {
     private static final Set<CandidateReason> STRONG_REASONS = Set.of(
             CandidateReason.VANILLA_FISH,
@@ -24,12 +24,12 @@ public final class FishDiscoveryEngine {
             "fish", "cod", "salmon", "trout", "bass", "carp", "tuna", "perch",
             "minnow", "herring", "halibut", "catfish", "gar", "piranha", "arapaima");
 
-    /** 创建无状态发现引擎。 */
+    /** 创建无状态发现引擎 */
     public FishDiscoveryEngine() {
     }
 
     /**
-     * 扫描纯输入并生成完整候选集合；所有 Registry 项都会保留，低置信度项供后续高级搜索使用。
+     * 扫描纯输入并生成完整候选集合；所有 Registry 项都会保留，低置信度项用于完整 Registry 搜索
      *
      * @param loadedMods 当前 ModList 元数据
      * @param inputs 完整 EntityType Registry 描述

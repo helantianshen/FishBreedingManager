@@ -16,44 +16,33 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
 /**
- * 让后代随机继承父母其中一方的 Variant，且只依赖 Minecraft 的公共契约（需求 §12）。
+ * 通过 Minecraft 公共契约尝试继承同类型亲本的变种数据
  *
- * <p>父母双方 {@code EntityType} 相同，因此"继承"永远发生在同一实体类内部：先按 50/50 随机选出捐赠方，
- * 再依次尝试两条公共通道，第一条成功即停止。
- * <ol>
- *   <li><b>{@link Bucketable} 桶数据：</b>Minecraft 用"被水桶装走再放出来时必须保留什么"定义实体的身份数据。
- *       读取捐赠方 {@code saveToBucketTag} 写出的标签，剔除 {@link Bucketable#saveDefaultDataToBucketTag}
- *       负责的通用字段后，剩下的就是实体自己声明必须随身份保留的数据（原版热带鱼的完整 Variant、
- *       第三方鱼可能附带的花色或重量），再交给后代的 {@code loadFromBucketTag}。</li>
- *   <li><b>{@link VariantHolder}：</b>Mojang 的公共 Variant 读写接口，覆盖不是 {@code Bucketable}
- *       但实现了该接口的实体。</li>
- * </ol>
+ * <p>先确认后代与双方亲本的 EntityType 相同，再等概率选择一方作为捐赠者
+ * 优先读取 {@link Bucketable} 桶数据，剔除通用状态字段后交给后代；没有可复制桶数据时尝试 {@link VariantHolder}
+ * 没有公共通道时保留默认个体，不反射或复制私有字段，也不要求第三方实现 FBM 专用接口
  *
- * <p>两条通道都用不上时后代保持 {@code EntityType.create} 的默认个体，这正是需求 §12.1 的规定。
- * 本类<b>不</b>使用反射、ASM、Mixin 或私有字段复制，也不要求第三方 Mod 实现任何 FBM 接口：
- * {@code Bucketable} 与 {@code VariantHolder} 都是 Minecraft 自己的公共类型，第三方只要正常继承原版鱼类
- * 或自行实现这两个接口即可自动获得继承能力（需求 §43、§47）。更复杂的私有 Variant 留给未来的
- * {@code BreedingAdapter}（需求 §48）。
+ * <p>桶契约可能包含外观以外的数据，本类只过滤明确列出的通用字段，不保证识别所有第三方数据语义
+ * 回调异常只记录失败，不阻止后代生成；第三方回调抛错前已经写入的字段没有通用回滚保证
  */
 public final class VariantInheritance {
     /**
-     * 由 {@link Bucketable#saveDefaultDataToBucketTag} 统一写入的通用字段。
+     * 由 {@link Bucketable#saveDefaultDataToBucketTag} 统一写入的通用字段
      *
-     * <p>这些键属于"这一条个体现在怎么样"，不属于"这是哪一种个体"，因此必须在继承前剔除，
-     * 否则新生幼体会直接继承父母当前的血量或 AI 开关。
+     * <p>这些键包含血量、AI 与重力等通用个体状态，必须在复制变种数据前剔除，避免后代继承亲本的运行时状态
      */
     private static final Set<String> BUCKET_DEFAULT_KEYS = Set.of(
             "NoAI", "Silent", "NoGravity", "Glowing", "Invulnerable", "Health");
 
     private final Function<Bucketable, CompoundTag> bucketTagReader;
 
-    /** 创建使用真实 {@link Bucketable} 桶标签的继承器。 */
+    /** 创建使用真实 {@link Bucketable} 桶标签的继承器 */
     public VariantInheritance() {
         this(VariantInheritance::readBucketTag);
     }
 
     /**
-     * 创建可注入桶标签读取边界的继承器，供同包测试在不构造真实 {@link ItemStack} 的情况下验证过滤与写入顺序。
+     * 创建可注入桶标签读取边界的继承器，供同包测试在不构造真实 {@link ItemStack} 的情况下验证过滤与写入顺序
      *
      * @param bucketTagReader 从捐赠方读取桶标签副本的函数
      */
@@ -62,10 +51,10 @@ public final class VariantInheritance {
     }
 
     /**
-     * 随机选出一方父母并尽量把其 Variant 复制到后代。
+     * 随机选出一方父母并尽量把其 Variant 复制到后代
      *
-     * <p>方法必须在后代加入世界之前调用，使 Variant 随首次实体生成包一起下发到客户端。任何失败都只影响
-     * 外观继承，不会阻止后代出生。
+     * <p>方法必须在后代加入世界之前调用，使 Variant 随首次实体生成包一起下发到客户端
+     * 回调异常转换为失败结果，由生成器继续处理出生流程，不保证回滚第三方已经写入的数据
      *
      * @param child 刚由 {@code EntityType.create} 创建、尚未加入世界的后代
      * @param firstParent 第一亲本
@@ -75,7 +64,7 @@ public final class VariantInheritance {
      */
     public VariantInheritanceResult inherit(Entity child, Entity firstParent,
                                             Entity secondParent, RandomSource random) {
-        // 未确认同类型时不做任何转换：下面的 VariantHolder 写入依赖"同类必然同 Variant 类型"这一前提。
+        // 未确认同类型时不做任何转换：VariantHolder 写入依赖同一 EntityType 使用一致的变种类型
         if (child.getType() != firstParent.getType()
                 || child.getType() != secondParent.getType()) {
             return VariantInheritanceResult.DEFAULT_INDIVIDUAL;
@@ -99,7 +88,7 @@ public final class VariantInheritance {
     }
 
     /**
-     * 通过桶数据契约复制捐赠方的身份数据。
+     * 通过桶数据契约复制捐赠方的身份数据
      *
      * @param child 目标后代
      * @param donor 被选中的亲本
@@ -119,9 +108,9 @@ public final class VariantInheritance {
     }
 
     /**
-     * 原地剔除桶标签中的通用个体状态字段，只保留实体自有的身份数据。
+     * 原地剔除桶标签中的通用个体状态字段，只保留实体自有的身份数据
      *
-     * <p>保持包级可见以便单独验证过滤集合，不需要构造实体或物品栈。
+     * <p>保持包级可见以便单独验证过滤集合，不需要构造实体或物品栈
      *
      * @param bucketTag 捐赠方桶标签的可修改副本
      */
@@ -130,10 +119,10 @@ public final class VariantInheritance {
     }
 
     /**
-     * 通过 Mojang 公共 {@link VariantHolder} 接口复制 Variant。
+     * 通过 Mojang 公共 {@link VariantHolder} 接口复制 Variant
      *
-     * <p>调用方已确认双方 {@code EntityType} 相同，因此两侧的 {@code VariantHolder} 类型参数必然一致，
-     * 这里的非受检转换在运行时是安全的。
+     * <p>调用方已确认双方 {@code EntityType} 相同，因此两侧的 {@code VariantHolder} 类型参数必然一致
+     * 这里的非受检转换在运行时是安全的
      *
      * @param child 目标后代
      * @param donor 被选中的亲本
@@ -154,7 +143,7 @@ public final class VariantInheritance {
     }
 
     /**
-     * 用捐赠方自己的桶物品读取其桶标签副本；该过程只修改临时物品栈，不改变实体状态。
+     * 用捐赠方自己的桶物品读取其桶标签副本；该过程只修改临时物品栈，不改变实体状态
      *
      * @param source 被选中的亲本
      * @return 桶标签的可修改副本；实体不提供桶物品时返回空标签

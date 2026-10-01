@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.MobCategory;
 
 /**
- * 从 Minecraft Registry 捕获后交给纯发现引擎处理的实体描述。
+ * 从 Minecraft Registry 捕获后交给纯发现引擎处理的实体描述
  *
  * @param entityTypeId 稳定 EntityType Registry ID
  * @param displayName 实体显示组件
@@ -23,7 +23,7 @@ public record EntityDiscoveryInput(
         MobCategory category,
         Set<CandidateReason> registryReasons
 ) {
-    /** 校验字段并复制 Registry 信号集合。 */
+    /** 校验字段并复制 Registry 信号集合 */
     public EntityDiscoveryInput {
         Objects.requireNonNull(entityTypeId, "entityTypeId");
         Objects.requireNonNull(displayName, "displayName");

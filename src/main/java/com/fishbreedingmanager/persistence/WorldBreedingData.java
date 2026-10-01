@@ -24,14 +24,13 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * 每个世界存档独立持久化的繁殖规则与导入实体集合。
+ * 每个世界存档独立持久化的繁殖规则与导入实体集合
  *
  * <p>数据挂到主世界 {@link ServerLevel} 的 SavedData 存储，使同一存档的所有维度共享一套 FBM 配置，并保存到
- * {@code <world>/data/fbm_breeding_rules.dat}。规则不使用全局配置文件，因此不同存档互不影响。
+ * {@code <world>/data/fbm_breeding_rules.dat}；规则不使用全局配置文件，因此不同存档互不影响
  *
- * <p>序列化用纯 {@link CompoundTag}/{@link ListTag}, 不用 {@code NbtOps}, 以求稳定 
- * 运行时不可变快照由 {@link #buildSnapshot()} 按需构建, 由 {@code BreedingRuleManager} 原子替换 
- * 本类仅是持久化数据源 
+ * <p>规则和导入集合使用 {@link CompoundTag} 与 {@link ListTag} 编解码；数据修改仅标记待保存，落盘由世界保存流程执行
+ * 本类保存持久化工作集，繁殖行为读取经服务层校验和发布的运行时快照，不直接读取此处的可变映射
  */
 public final class WorldBreedingData extends SavedData {
     private static final String DATA_NAME = "fbm_breeding_rules";
@@ -40,9 +39,9 @@ public final class WorldBreedingData extends SavedData {
     private final Set<ResourceLocation> importedEntities = new LinkedHashSet<>();
 
     /**
-     * 创建不含规则和导入实体的空数据对象。
+     * 创建不含规则和导入实体的空数据对象
      *
-     * <p>主要供加载器、测试和 {@link #create()} 新存档工厂使用；默认规则由新存档工厂另行种入。
+     * <p>主要供加载器、测试和 {@link #create()} 新存档工厂使用；默认规则由新存档工厂另行种入
      */
     public WorldBreedingData() {
     }
@@ -54,12 +53,12 @@ public final class WorldBreedingData extends SavedData {
         importedEntities.addAll(importedList);
     }
 
-    // ---- 访问 ----
+
 
     /**
-     * 获取指定服务器当前存档共享的 FBM SavedData。
+     * 获取指定服务器当前存档共享的 FBM SavedData
      *
-     * <p>首次创建数据文件时会通过 {@link #create()} 种入四种默认原版鱼规则；已有文件则通过 {@link #load} 恢复。
+     * <p>首次创建数据文件时会通过 {@link #create()} 种入四种默认原版鱼规则；已有文件则通过 {@link #load} 恢复
      *
      * @param server 当前逻辑服务器
      * @return 与该世界存档绑定的数据对象
@@ -71,7 +70,7 @@ public final class WorldBreedingData extends SavedData {
     }
 
     /**
-     * 从任意维度获取同一存档共享的 FBM SavedData。
+     * 从任意维度获取同一存档共享的 FBM SavedData
      *
      * @param level 当前服务端 Level
      * @return 主世界数据存储中的共享数据对象
@@ -80,19 +79,19 @@ public final class WorldBreedingData extends SavedData {
         return get(level.getServer());
     }
 
-    /** 新数据工厂, 种入默认原版鱼规则 需求§46 */
+    /** 仅在存档尚无 FBM 数据时种入四种内建规则  */
     private static WorldBreedingData create() {
         WorldBreedingData data = new WorldBreedingData();
         DefaultRules.seedInto(data);
         return data;
     }
 
-    // ---- 修改器, 每个都调 setDirty 以便持久化 ----
+
 
     /**
-     * 按实体 ID 新增或替换规则并标记数据待保存。
+     * 按实体 ID 新增或替换规则并标记数据待保存
      *
-     * <p>生产修改应优先经由 {@link com.fishbreedingmanager.breeding.WorldBreedingService}，避免绕过完整候选校验。
+     * <p>生产修改应优先经由 {@link com.fishbreedingmanager.breeding.WorldBreedingService}，避免绕过完整候选校验
      *
      * @param rule 待保存规则
      */
@@ -102,10 +101,10 @@ public final class WorldBreedingData extends SavedData {
     }
 
     /**
-     * 用已经完整校验的规则集合整体替换持久化数据。
+     * 用已经完整校验的规则集合整体替换持久化数据
      *
-     * <p>该入口由事务式世界服务在候选全集通过 {@link RuleValidator} 后调用。整体替换可确保删除操作与更新操作
-     * 使用相同的提交路径，并统一标记 {@link SavedData} 为待保存状态。
+     * <p>该入口由事务式世界服务在候选全集通过 {@link RuleValidator} 后调用；整体替换可确保删除操作与更新操作
+     * 使用相同的提交路径，并统一标记 {@link SavedData} 为待保存状态
      *
      * @param replacement 通过完整校验的候选规则集合
      */
@@ -118,7 +117,23 @@ public final class WorldBreedingData extends SavedData {
     }
 
     /**
-     * 查询持久化工作集中的指定规则。
+     * 用完整校验后的候选集合同时替换规则与手动导入记录
+     *
+     * @param replacement 完整候选规则
+     * @param imports 候选导入集合
+     */
+    public void replaceManagement(Collection<BreedingRule> replacement, Set<ResourceLocation> imports) {
+        rules.clear();
+        for (BreedingRule rule : replacement) {
+            rules.put(rule.entityTypeId(), rule);
+        }
+        importedEntities.clear();
+        importedEntities.addAll(imports);
+        setDirty();
+    }
+
+    /**
+     * 查询持久化工作集中的指定规则
      *
      * @param id 实体注册表 ID
      * @return 当前规则；不存在时为 {@code null}
@@ -128,7 +143,7 @@ public final class WorldBreedingData extends SavedData {
     }
 
     /**
-     * 记录一个由管理员手动导入的实体 ID，并在集合变化时标记待保存。
+     * 记录一个由管理员手动导入的实体 ID，并在集合变化时标记待保存
      *
      * @param id 导入实体注册表 ID
      */
@@ -139,7 +154,7 @@ public final class WorldBreedingData extends SavedData {
     }
 
     /**
-     * 删除手动导入实体记录，并在集合变化时标记待保存。
+     * 删除手动导入实体记录，并在集合变化时标记待保存
      *
      * @param id 导入实体注册表 ID
      */
@@ -150,7 +165,7 @@ public final class WorldBreedingData extends SavedData {
     }
 
     /**
-     * 返回手动导入实体 ID 的不可修改副本。
+     * 返回手动导入实体 ID 的不可修改副本
      *
      * @return 当前导入实体集合副本
      */
@@ -159,7 +174,7 @@ public final class WorldBreedingData extends SavedData {
     }
 
     /**
-     * 返回按持久化插入顺序排列的全部规则副本。
+     * 返回按持久化插入顺序排列的全部规则副本
      *
      * @return 不暴露内部映射的规则集合
      */
@@ -168,7 +183,7 @@ public final class WorldBreedingData extends SavedData {
     }
 
     /**
-     * 从当前持久化工作集构建不可变运行时快照。
+     * 从当前持久化工作集构建不可变运行时快照
      *
      * @return 复制规则映射与导入集合的新快照
      */
@@ -176,13 +191,13 @@ public final class WorldBreedingData extends SavedData {
         return new BreedingRuleSnapshot(Map.copyOf(rules), Set.copyOf(importedEntities));
     }
 
-    // ---- 序列化 手动 NBT, 不用 NbtOps ----
+
 
     /**
-     * 从世界 NBT 恢复规则与导入实体；单个非法资源 ID 会被跳过而非阻止整个存档加载。
+     * 从世界 NBT 恢复规则与导入实体；单个非法资源 ID 会被跳过而非阻止整个存档加载
      *
      * @param tag SavedData 根 NBT
-     * @param registries 当前注册表查询提供器；手动 NBT 格式暂不需要读取
+     * @param registries 当前注册表查询提供器；当前 NBT 格式不使用此参数
      * @return 恢复后的世界规则数据
      */
     public static WorldBreedingData load(CompoundTag tag, HolderLookup.Provider registries) {
@@ -206,10 +221,10 @@ public final class WorldBreedingData extends SavedData {
     }
 
     /**
-     * 将当前规则和导入实体完整写入 SavedData NBT。
+     * 将当前规则和导入实体完整写入 SavedData NBT
      *
      * @param tag NeoForge 提供的目标根标签
-     * @param registries 当前注册表查询提供器；手动 NBT 格式暂不需要读取
+     * @param registries 当前注册表查询提供器；当前 NBT 格式不使用此参数
      * @return 写入完成的同一根标签
      */
     @Override

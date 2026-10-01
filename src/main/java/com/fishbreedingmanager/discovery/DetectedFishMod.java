@@ -5,7 +5,7 @@ import java.util.Objects;
 import net.minecraft.network.chat.Component;
 
 /**
- * EntityType 来源 Mod/Namespace 的稳定分组统计。
+ * EntityType 来源 Mod/Namespace 的稳定分组统计
  *
  * @param modId Mod ID 或回退 Namespace
  * @param displayName Mod 显示名或回退 Namespace
@@ -20,7 +20,7 @@ public record DetectedFishMod(
         int registeredEntityCount,
         int fishCandidateCount
 ) {
-    /** 校验统计边界并防御性复制显示组件树。 */
+    /** 校验统计边界并防御性复制显示组件树 */
     public DetectedFishMod {
         Objects.requireNonNull(modId, "modId");
         Objects.requireNonNull(displayName, "displayName");
@@ -33,7 +33,7 @@ public record DetectedFishMod(
     }
 
     /**
-     * 返回来源显示组件。
+     * 返回来源显示组件
      *
      * @return 与内部状态隔离的显示组件副本
      */

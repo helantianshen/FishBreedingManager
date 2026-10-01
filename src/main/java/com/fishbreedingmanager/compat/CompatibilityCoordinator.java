@@ -10,10 +10,10 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.Entity;
 
 /**
- * 通过唯一的核心面向边界暴露全部可选第三方集成。
+ * 通过唯一的核心面向边界暴露全部可选第三方集成
  *
- * <p>核心生命周期与规则服务只依赖本协调器，不依赖任何具体 Mod 适配。各模块彼此隔离，因此缺失或出错的可选集成
- * 不会阻止其余集成完成安装或刷新，也不会反向影响已经提交的规则快照。
+ * <p>核心生命周期与规则服务只依赖本协调器，不依赖任何具体 Mod 适配；各模块彼此隔离，因此缺失或出错的可选集成
+ * 不会阻止其余集成完成安装或刷新，也不会反向影响已经提交的规则快照
  */
 public final class CompatibilityCoordinator {
     private static final CompatibilityCoordinator INSTANCE = new CompatibilityCoordinator(List.of(
@@ -36,7 +36,7 @@ public final class CompatibilityCoordinator {
     }
 
     /**
-     * 返回生产环境共享的兼容注册表。
+     * 返回生产环境共享的兼容注册表
      *
      * @return 共享兼容协调器
      */
@@ -45,7 +45,7 @@ public final class CompatibilityCoordinator {
     }
 
     /**
-     * 为单个实体安装全部适用的可选集成。
+     * 为单个实体安装全部适用的可选集成
      *
      * @param entity 正在进入服务端世界的实体
      * @param manager 当前服务器规则管理器
@@ -66,7 +66,7 @@ public final class CompatibilityCoordinator {
     }
 
     /**
-     * 在规则快照发布后重新评估已经加载的实体。
+     * 在规则快照发布后重新评估已经加载的实体
      *
      * @param server 当前逻辑服务器
      */
@@ -82,10 +82,10 @@ public final class CompatibilityCoordinator {
         }
     }
 
-    /** 单个可选第三方集成向协调器暴露的最小契约。 */
+    /** 单个可选第三方集成向协调器暴露的最小契约 */
     interface Module {
         /**
-         * 尝试为指定实体安装本模块的集成。
+         * 尝试为指定实体安装本模块的集成
          *
          * @param entity 正在进入服务端世界的实体
          * @param manager 当前服务器规则管理器
@@ -94,7 +94,7 @@ public final class CompatibilityCoordinator {
         boolean installIfEligible(Entity entity, BreedingRuleManager manager);
 
         /**
-         * 在规则发布后为已加载实体补装本模块的集成。
+         * 在规则发布后为已加载实体补装本模块的集成
          *
          * @param server 当前逻辑服务器
          */

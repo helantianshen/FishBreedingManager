@@ -13,11 +13,11 @@ import com.fishbreedingmanager.persistence.WorldBreedingData;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * 验证新存档默认种入四种原版鱼规则并全部启用。
+ * 验证新存档默认种入四种原版鱼规则并全部启用
  */
 class DefaultRulesTest {
     /**
-     * 默认集合必须精确包含鳕鱼、鲑鱼、热带鱼和河豚，避免模板或后续重构悄悄改变新世界行为。
+     * 默认集合必须精确包含鳕鱼、鲑鱼、热带鱼和河豚，并验证新建世界的初始食物与计时配置
      */
     @Test
     void seedsExactlyFourEnabledVanillaFishRules() {

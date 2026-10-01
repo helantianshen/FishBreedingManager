@@ -13,7 +13,7 @@ import com.fishbreedingmanager.persistence.WorldBreedingData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 
-/** 每个逻辑服务器独立持有最近一次成功构建的鱼类发现快照。 */
+/** 每个逻辑服务器独立持有最近一次成功构建的鱼类发现快照 */
 public final class FishDiscoveryManager {
     private static final Map<MinecraftServer, FishDiscoveryManager> MANAGERS =
             new ConcurrentHashMap<>();
@@ -39,7 +39,7 @@ public final class FishDiscoveryManager {
     }
 
     /**
-     * 返回与当前服务器生命周期绑定的发现管理器。
+     * 返回与当前服务器生命周期绑定的发现管理器
      *
      * @param server 当前逻辑服务器
      * @return 该服务器唯一的发现管理器
@@ -49,7 +49,7 @@ public final class FishDiscoveryManager {
     }
 
     /**
-     * 清理已停止服务器的内存快照。
+     * 清理已停止服务器的内存快照
      *
      * @param server 正在停止的逻辑服务器
      */
@@ -58,7 +58,7 @@ public final class FishDiscoveryManager {
     }
 
     /**
-     * 返回最近一次成功发布的不可变快照。
+     * 返回最近一次成功发布的不可变快照
      *
      * @return 当前发现快照
      */
@@ -67,7 +67,7 @@ public final class FishDiscoveryManager {
     }
 
     /**
-     * 从当前 NeoForge 环境和世界持久化导入集合重建候选快照。
+     * 从当前 NeoForge 环境和世界持久化导入集合重建候选快照
      *
      * @param server 当前逻辑服务器
      * @return 成功状态、候选数或失败原因
@@ -78,7 +78,26 @@ public final class FishDiscoveryManager {
     }
 
     /**
-     * 先完整构建局部快照，再通过单次 volatile 写发布；失败时保留旧引用。
+     * 预先构建导入候选视图，不修改最近一次成功发布的快照
+     *
+     * @param imports 候选导入集合
+     * @return 尚未发布的候选发现视图
+     */
+    public DiscoverySnapshot prepare(Set<ResourceLocation> imports) {
+        return new FishDiscoveryEngine().discover(loadedModsSource.get(), entitySource.get(), imports);
+    }
+
+    /**
+     * 发布已经完整构建的不可变发现视图
+     *
+     * @param next 已构建发现视图
+     */
+    public void install(DiscoverySnapshot next) {
+        snapshot = Objects.requireNonNull(next);
+    }
+
+    /**
+     * 先完整构建局部快照，再通过单次 volatile 写发布；失败时保留旧引用
      */
     DiscoveryReloadResult rebuild(Supplier<DiscoverySnapshot> builder) {
         try {

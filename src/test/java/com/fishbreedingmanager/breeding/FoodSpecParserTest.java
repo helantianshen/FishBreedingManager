@@ -8,11 +8,11 @@ import org.junit.jupiter.api.Test;
 import net.minecraft.resources.ResourceLocation;
 
 /**
- * 验证管理员命令中物品 ID 与物品标签 ID 的确定性解析。
+ * 验证管理员命令中物品 ID 与物品标签 ID 的确定性解析
  */
 class FoodSpecParserTest {
     /**
-     * 逗号分隔输入应保持原始顺序，并把带 {@code #} 前缀的条目归入标签集合。
+     * 逗号分隔输入应保持原始顺序，并把带 {@code #} 前缀的条目归入标签集合
      */
     @Test
     void parsesMultipleItemsAndTags() {
@@ -27,7 +27,7 @@ class FoodSpecParserTest {
     }
 
     /**
-     * 空输入、空列表项、空标签和不符合资源 ID 语法的内容必须立即拒绝。
+     * 空输入、空列表项、空标签和不符合资源 ID 语法的内容必须立即拒绝
      */
     @Test
     void rejectsBlankEntriesAndInvalidResourceIds() {

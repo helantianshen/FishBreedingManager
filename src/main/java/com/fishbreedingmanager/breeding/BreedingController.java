@@ -24,38 +24,38 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * 服务端权威的集中式运行时繁殖引擎，保持 Rule、State 与 Engine 分离。
+ * 服务端权威的集中式运行时繁殖引擎，保持 Rule、State 与 Engine 分离
  *
- * <p>引擎由 {@link LevelTickEvent.Pre} 驱动，通过 {@link ActiveLoveIndex} 只遍历当前 Level 中处于 FBM Love 的实体，
- * 不扫描全世界。每五个游戏刻执行一次以下流程：
+ * <p>引擎由 {@link LevelTickEvent.Pre} 驱动，通过 {@link ActiveLoveIndex} 只遍历当前 Level 中处于 FBM Love 的实体
+ * 不扫描全世界；每五个游戏刻执行一次以下流程
  * <ol>
- *   <li>清理实体缺失、规则删除/禁用或 Love 过期的索引；</li>
- *   <li>在搜索半径内为同类型、可用的 Love 实体建立双向临时配对；</li>
- *   <li>寻路靠近并在生成前重新验证双方状态；</li>
- *   <li>仅在同类型后代成功加入世界后提交父母冷却与 Love 清除。</li>
+ *   <li>清理实体缺失、规则删除/禁用或 Love 过期的索引</li>
+ *   <li>在搜索半径内为同类型、可用的 Love 实体建立双向临时配对</li>
+ *   <li>寻路靠近并在生成前重新验证双方状态</li>
+ *   <li>仅在同类型后代成功加入世界后提交父母冷却与 Love 清除</li>
  * </ol>
  *
- * <p>每轮都从 {@link BreedingRuleManager} 动态查询规则，热更新立即影响现存实体；附件上的冷却与成长截止时间不重算。
+ * <p>每轮都从 {@link BreedingRuleManager} 动态查询规则，热更新立即影响现存实体；附件上的冷却与成长截止时间不重算
  */
 @EventBusSubscriber(modid = FishBreedingManager.MOD_ID)
 public final class BreedingController {
-    /** 每 N tick 跑一次搜索/繁殖 pass 以限制开销 需求§37 */
+    /** 每轮搜索间隔的游戏刻数，用于限制活跃实体配对与寻路检查的频率  */
     private static final long SEARCH_INTERVAL = 5L;
-    /** 查找配偶 AABB 的半宽, 单位方块 */
+    /** 配偶搜索包围盒的半宽，单位为方块 */
     private static final double SEARCH_RADIUS = 8.0;
     private static final double SEARCH_RADIUS_SQR = SEARCH_RADIUS * SEARCH_RADIUS;
-    /** 两实体此距离 平方 内可产生后代 */
+    /** 生成后代时允许的亲本距离平方，避免距离比较重复开方 */
     private static final double BREED_DISTANCE_SQR = 2.25D;
     /** 靠近配偶时的寻路速度倍率 */
     private static final double NAV_SPEED = 1.0D;
-    /** 只负责创建后代、不修改父母状态的生成器。 */
+    /** 只负责创建后代、不修改父母状态的生成器 */
     private static final ChildSpawner CHILD_SPAWNER = new ChildSpawner();
 
     private BreedingController() {
     }
 
     /**
-     * 在服务端 Level 的节流 tick 中推进清理、匹配、寻路与繁殖。
+     * 在服务端 Level 的节流 tick 中推进清理、匹配、寻路与繁殖
      *
      * @param event NeoForge Level tick 前置事件
      */
@@ -87,13 +87,13 @@ public final class BreedingController {
             BreedingState state = entity.getData(ModAttachments.BREEDING_STATE);
             state.tickTimers(now);
 
-            // 规则被删/禁用 → 立即清除该实体 FBM love 需求§28 
+            // 规则删除或禁用时清除 FBM Love，防止失效规则继续驱动配对
             if (rule == null || !rule.enabled()) {
                 state.clearLove();
                 ActiveLoveIndex.INSTANCE.remove(level, id);
                 continue;
             }
-            // love 计时器过期 
+            // 过期实体退出活跃索引，后续喂食成功时才重新加入
             if (!state.isInLove(now)) {
                 ActiveLoveIndex.INSTANCE.remove(level, id);
                 continue;
@@ -108,7 +108,7 @@ public final class BreedingController {
     }
 
     /**
-     * 验证已配对双方，保持寻路并在距离足够近时尝试繁殖。
+     * 验证已配对双方，保持寻路并在距离足够近时尝试繁殖
      *
      * @param level 当前服务端 Level
      * @param entity 当前处理实体
@@ -137,10 +137,10 @@ public final class BreedingController {
     }
 
     /**
-     * 为未配对实体寻找附近同类型可用伙伴，并建立双向临时 UUID 引用。
+     * 为未配对实体寻找附近同类型可用伙伴，并建立双向临时 UUID 引用
      *
      * <p>自身与候选方使用同一组资格条件（有效 Love、无冷却、非幼体、未配对），与 {@link #isValidPair} 的生成前
-     * 复检保持对称，避免只对一方设防。
+     * 复检保持对称，避免只对一方设防
      *
      * @param level 当前服务端 Level
      * @param entity 当前处理实体
@@ -173,7 +173,7 @@ public final class BreedingController {
             if (entity.distanceToSqr(other) > SEARCH_RADIUS_SQR) {
                 continue;
             }
-            // 配偶引用必须双向写入，后续生成前会再次验证互相指向。
+            // 配偶引用必须双向写入，后续生成前会再次验证互相指向
             state.setMate(other.getUUID());
             otherState.setMate(entity.getUUID());
             navigateToward(entity, other);
@@ -183,7 +183,7 @@ public final class BreedingController {
     }
 
     /**
-     * 尝试生成后代，并且只在后代真正加入世界后提交父母状态。
+     * 尝试生成后代，并且只在后代真正加入世界后提交父母状态
      *
      * @param level 两亲本所在的服务端 Level
      * @param a 第一亲本
@@ -219,10 +219,10 @@ public final class BreedingController {
     }
 
     /**
-     * 根据后代生成结果提交或回滚父母的临时配对状态。
+     * 根据后代生成结果提交或回滚父母的临时配对状态
      *
-     * <p>失败时只清除配偶 UUID，保留 Love 与空闲冷却以便在剩余时间窗内重试；成功时才启动双方冷却并清除 Love。
-     * 方法不依赖 Minecraft 实体，保持包级可见以便直接验证状态策略。
+     * <p>失败时只清除配偶 UUID，保留 Love 与空闲冷却以便在剩余时间窗内重试；成功时才启动双方冷却并清除 Love
+     * 方法不依赖 Minecraft 实体，保持包级可见以便直接验证状态策略
      *
      * @param result 后代生成结果
      * @param first 第一亲本状态
@@ -246,7 +246,7 @@ public final class BreedingController {
     }
 
     /**
-     * 验证当前配对仍满足同类型、双方有效 Love、无冷却、非幼体且 UUID 互相指向。
+     * 验证当前配对仍满足同类型、双方有效 Love、无冷却、非幼体且 UUID 互相指向
      *
      * @param first 第一亲本实体
      * @param firstState 第一亲本状态
@@ -272,7 +272,7 @@ public final class BreedingController {
     }
 
     /**
-     * 只清除仍然互相指向当前双方的配偶引用，避免覆盖已经重新建立的新配对。
+     * 只清除仍然互相指向当前双方的配偶引用，避免覆盖已经重新建立的新配对
      *
      * @param first 第一实体
      * @param firstState 第一实体状态
@@ -290,7 +290,7 @@ public final class BreedingController {
     }
 
     /**
-     * 若实体属于 {@link Mob} 则使用原生导航向配偶移动；非 Mob 实体保持原位但仍兼容近距离生成。
+     * 若实体属于 {@link Mob} 则使用原生导航向配偶移动；非 Mob 实体保持原位但仍兼容近距离生成
      *
      * @param self 需要移动的实体
      * @param target 目标配偶
@@ -299,6 +299,6 @@ public final class BreedingController {
         if (self instanceof Mob mob) {
             mob.getNavigation().moveTo(target, NAV_SPEED);
         }
-        // 非 Mob 实体没有通用导航 API，跳过移动而不破坏其他繁殖状态。
+        // 非 Mob 实体没有通用导航 API，跳过移动而不破坏其他繁殖状态
     }
 }

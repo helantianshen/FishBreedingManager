@@ -20,11 +20,11 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 
 /**
- * 验证生成结果的状态提交策略不会在失败时错误消耗父母的繁殖机会。
+ * 验证生成结果的状态提交策略不会在失败时错误消耗父母的繁殖机会
  */
 class BreedingControllerOutcomeTest {
     /**
-     * 后代生成失败时只解除当前配对，双方 Love 与空闲冷却状态必须保留以便再次匹配。
+     * 后代生成失败时只解除当前配对，双方 Love 与空闲冷却状态必须保留以便再次匹配
      */
     @Test
     void failureClearsPairButPreservesLoveAndAvailableCooldown() {
@@ -47,7 +47,7 @@ class BreedingControllerOutcomeTest {
     }
 
     /**
-     * 后代成功加入世界后才提交双方冷却并清除 Love。
+     * 后代成功加入世界后才提交双方冷却并清除 Love
      */
     @Test
     void successStartsCooldownAndClearsLove() {
@@ -66,7 +66,7 @@ class BreedingControllerOutcomeTest {
     }
 
     /**
-     * 同类型、有效 Love、无冷却、非幼体且 UUID 互相指向的两个不同实体应构成有效配对。
+     * 同类型、有效 Love、无冷却、非幼体且 UUID 互相指向的两个不同实体应构成有效配对
      */
     @Test
     void acceptsOnlyMutuallyLinkedEligiblePair() {
@@ -93,7 +93,7 @@ class BreedingControllerOutcomeTest {
     }
 
     /**
-     * 创建处于有效 Love 时间窗的状态。
+     * 创建处于有效 Love 时间窗的状态
      *
      * @return Love 截止到第 600 刻的实体状态
      */
@@ -104,7 +104,7 @@ class BreedingControllerOutcomeTest {
     }
 
     /**
-     * 返回测试使用的合法鳕鱼繁殖规则。
+     * 返回测试使用的合法鳕鱼繁殖规则
      *
      * @return 冷却 600 刻、成长 1200 刻的启用规则
      */

@@ -10,28 +10,28 @@ import java.util.WeakHashMap;
 import net.minecraft.server.level.ServerLevel;
 
 /**
- * 按服务端 Level 隔离的活跃 Love 实体内存索引。
+ * 按服务端 Level 隔离的活跃 Love 实体内存索引
  *
- * <p>索引只保存当前已加载且处于 FBM Love 时间窗的实体 UUID，使繁殖控制器无需每次扫描世界全部实体。
- * {@link WeakHashMap} 允许已经卸载的 Level 被回收，服务器停止时仍会主动调用 {@link #clearAll()}。
- * 本类不做并发同步，全部方法只允许在 Minecraft 服务端主线程调用。
+ * <p>索引只保存当前已加载且处于 FBM Love 时间窗的实体 UUID，使繁殖控制器无需每次扫描世界全部实体
+ * {@link WeakHashMap} 允许已经卸载的 Level 被回收，服务器停止时仍会主动调用 {@link #clearAll()}
+ * 本类不做并发同步，全部方法只允许在 Minecraft 服务端主线程调用
  */
 public final class ActiveLoveIndex {
-    /** 生产环境共享索引；一个进程中的各服务器会话在停止事件中统一清空。 */
+    /** 生产环境共享索引；一个进程中的各服务器会话在停止事件中统一清空 */
     public static final ActiveLoveIndex INSTANCE = new ActiveLoveIndex();
 
     private final Map<ServerLevel, Set<UUID>> byLevel = new WeakHashMap<>();
 
     /**
-     * 创建空索引。保持包级可见以供同包单元测试创建隔离实例。
+     * 创建空索引；保持包级可见以供同包单元测试创建隔离实例
      */
     ActiveLoveIndex() {
     }
 
     /**
-     * 将实体加入指定 Level 的活跃 Love 集合。
+     * 将实体加入指定 Level 的活跃 Love 集合
      *
-     * <p>重复加入同一 UUID 不会产生重复项。仅允许服务端主线程调用。
+     * <p>重复加入同一 UUID 不会产生重复项；仅允许服务端主线程调用
      *
      * @param level 实体当前所在的服务端 Level
      * @param entityId 实体 UUID
@@ -41,7 +41,7 @@ public final class ActiveLoveIndex {
     }
 
     /**
-     * 从指定 Level 删除实体，并在集合变空时删除 Level 键。
+     * 从指定 Level 删除实体，并在集合变空时删除 Level 键
      *
      * @param level 实体离开或状态结束前所在的服务端 Level
      * @param entityId 实体 UUID
@@ -58,9 +58,9 @@ public final class ActiveLoveIndex {
     }
 
     /**
-     * 获取指定 Level 当前活跃 UUID 的不可修改迭代快照。
+     * 获取指定 Level 当前活跃 UUID 的不可修改迭代快照
      *
-     * <p>控制器可以在遍历返回列表时安全地修改原索引，不会触发并发修改异常。
+     * <p>控制器可以在遍历返回列表时安全地修改原索引，不会触发并发修改异常
      *
      * @param level 待查询的服务端 Level
      * @return 保持加入顺序的不可修改 UUID 列表；无记录时返回空列表
@@ -71,7 +71,7 @@ public final class ActiveLoveIndex {
     }
 
     /**
-     * 清除当前服务器会话的全部索引，服务端停止时必须调用。
+     * 清除当前服务器会话的全部索引，服务端停止时必须调用
      */
     public void clearAll() {
         byLevel.clear();
