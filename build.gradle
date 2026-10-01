@@ -46,6 +46,9 @@ base {
 // 可安装产物同时标识加载器、模组、模组版本与 Minecraft 版本
 tasks.named('jar', Jar).configure {
     archiveClassifier = "mc${minecraft_version}"
+    from(files('LICENSE', 'NOTICE', 'TEMPLATE_LICENSE.txt')) {
+        into 'META-INF'
+    }
 }
 
 // Minecraft 1.21.1 使用 Java 21 工具链编译与运行

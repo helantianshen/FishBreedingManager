@@ -1,0 +1,15 @@
+Fish Breeding Manager
+Copyright (c) 2026 HikariTish
+
+Except where otherwise noted, the original code of Fish Breeding Manager
+is licensed under the GNU Lesser General Public License, version 2.1 only
+(SPDX-License-Identifier: LGPL-2.1-only). See LICENSE for the full terms.
+
+This software is distributed without any warranty, including the implied
+warranties of merchantability or fitness for a particular purpose.
+
+Files originating from the NeoForge MDK template retain their MIT license
+and copyright notices. See TEMPLATE_LICENSE.txt.
+
+Third-party dependencies and separately licensed materials remain subject
+to their respective licenses. This notice does not relicense them.
